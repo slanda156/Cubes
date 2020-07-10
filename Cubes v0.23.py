@@ -1,14 +1,14 @@
-import pygame as py
 import math
 import random as ra
+import pygame as py
 
 # Import classes
 
 from damageTypes import damageTypes
-from weapons import *
-from armor import *
-from item import *
-from upgrade import *
+from weapons import weaponNum, weapons, initWeapon
+from armor import armorNum, armors, initArmor
+from item import itemNum, items, initItem
+from upgrade import upgradeNum, upgrades, initUpgrade
 
 # Define the window
 i = 0
@@ -16,17 +16,6 @@ setFPS = 60
 QUALITY = (16, 9)
 WINDOWWIDTH = 2040
 WINDOWHEIGHT = int((WINDOWWIDTH/QUALITY[0])*QUALITY[1])
-
-# Contorls
-
-# WASD      :   Movement
-# T         :   Skip Build Time
-# F         :   Place Tower     |BUG|
-# E         :   Use Equiped Item (Currently just Medkits)
-# TAB       :   Switch Hud Modes (0: Nothin; 1: Health; 2: 1 & Level, Resources; 3: 2 & XP, Reload, Status; 4: 3 & Performance)
-# Spacebar  :   Mind Transfer   |BUG|
-# LMB       :   Shoot
-# RMB       :   Teleport        |BUG|
 
 version = "0.23"
 
@@ -47,6 +36,8 @@ py.font.init()
 
 buttonFont = py.font.SysFont("Comic Sans Ms", 24)
 titleFont = py.font.SysFont("Comic Sans Ms", 35)
+itemFont = py.font.SysFont("Comic Sans Ms", 18)
+effectFont = py.font.SysFont("Comic Sans Ms", 18)
 
 # Define Textures
 boss = {
@@ -57,6 +48,17 @@ boss = {
     1, 1, 1, 1, 1, 1, 1, 1,
     0, 0, 1, 1, 1, 1, 0, 0,
     0, 0, 1, 0, 0, 1, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0
+}
+
+testIcon = {
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0
 }
 
@@ -116,8 +118,8 @@ class spawnPoint:
     def __init__(self, pos, team):
         self.pos = pos
         self.team = team
-        self.maxCooldown = 5
-        self.minCooldown = 2
+        self.maxCooldown = 7
+        self.minCooldown = 4
         self.cooldown = self.maxCooldown
 
     def draw(self):
@@ -132,22 +134,22 @@ class spawnPoint:
                 if characters[findPlayerChar()].level // 1 >= 1:
                     allowedWeaponTypes.append(physical)
 
-                elif characters[findPlayerChar()].level // 3 >= 3:
+                if characters[findPlayerChar()].level // 3 >= 1:
                     allowedWeaponTypes.append(fire)
 
-                elif characters[findPlayerChar()].level // 6 >= 6:
+                if characters[findPlayerChar()].level // 6 >= 1:
                     allowedWeaponTypes.append(plasma)
 
-                elif characters[findPlayerChar()].level // 9 >= 9:
+                if characters[findPlayerChar()].level // 9 >= 1:
                     allowedWeaponTypes.append(laser)
 
-                for y in allowedWeaponTypes:
-                    for x in weapons:
-                        if x.type == y:
-                            allowedWeapons.append(x)
+                for a in allowedWeaponTypes:
+                    for b in weapons:
+                        if b.type == a:
+                            allowedWeapons.append(b)
 
                 if len(allowedWeapons) > 1:
-                    weaponIn = ra.randrange(0, (len(allowedWeapons)-1))
+                    weaponIn = ra.randrange(0, len(allowedWeapons))
                 else:
                     weaponIn = 0
                 armorIn = ra.randrange(0, armorNum)
@@ -175,7 +177,7 @@ class projectile:
                 self.dierection.scale_to_length(self.power*6)
             else:
                 self.dierection.scale_to_length(self.power)
-    
+
         self.offset = self.dierection
 
     def draw(self):
@@ -193,10 +195,11 @@ class projectile:
         self.range -= self.offset.length()
 
 class effect:
-    def __init__(self, effectType, effectDuration, effectDamage):
+    def __init__(self, effectType, effectDuration, effectDamage, effectColor):
         self.type = effectType
         self.duration = effectDuration
         self.damage = effectDamage
+        self.color = effectColor
 
 class tower:
     def __init__(self, pos, team, weapon, level, accuracy):
@@ -218,17 +221,19 @@ class tower:
 
     def draw(self):
         for x in self.effect:
-            if x.type == self.armor.type:
-                self.health -= x.damage
-            else:
-                self.health -= x.damage
+            self.health -= x.damage
 
             if x.duration <= 0:
-                pass
+                i = getEffectPosinList(x.type, self.effect)
+                try:
+                    del self.effect[i]
+                except:
+                    print(f"Effect not deletet: {i}")
+
 
         self.target = py.mouse.get_pos()
 
-        if getNearestEnemieChar(self) != None:
+        if getNearestEnemieChar(self) is not None:
             self.target = getNearestEnemieChar(self).pos
 
         if not checkList(self.effect, "shocked"):
@@ -250,14 +255,10 @@ class tower:
     def getHit(self, weapon):
         self.effectDuration = weapon.effectDuration
 
-        if weapon.effect != None:
-            self.effect.append(effect(weapon.type, weapon.effectDuration, weapon.effectDamage))
+        if weapon.effect is not None:
+            self.effect.append(effect(weapon.type, weapon.effectDuration, weapon.effectDamage, weapon.color))
 
-        if self.armor.type == weapon.type:
-            self.health -= weapon.damage/2
-
-        else:
-            self.health -= weapon.damage
+        self.health -= weapon.damage
 
     def shoot(self, target):
         appendProjectiles(self.pos, py.Vector2(target[0]-self.pos[0], target[1]-self.pos[1]), self.weapon.power, self.weapon, self.team, self.accuracy)
@@ -276,7 +277,8 @@ class tower:
         py.draw.rect(gamesurf, RED, (pos[0]-18, pos[1]-4, int(36*i), 8))
 
 class character:
-    def __init__(self, pos, team, weapon, armor, speed):
+    def __init__(self, pos, team, weapon, armor, speed, controlled=True):
+        self.controlled = controlled
         self.pos = [pos[0], pos[1]]
         self.seq = 0
         self.team = team
@@ -297,6 +299,7 @@ class character:
         self.towerAccuracy = 1
         self.towerWeapon = weapons[findObjectInList(weapons, "rifle")]
         self.accuracy = 1
+        self.inventory = {items[0].name: items[0]}
 
         if self.armor.type == physical:
             self.maxHealth = float(10 * self.level * 2)
@@ -317,6 +320,8 @@ class character:
             self.movementSpeed = int(speed)
 
     def draw(self):
+        self.maxCooldown = self.weapon.reloadTime / 100
+
         if self.armor.type == physical:
             self.maxHealth = float(10 * self.level * 2)
         else:
@@ -324,9 +329,13 @@ class character:
 
         if self.boost > self.maxBoost:
             self.boost = self.maxBoost
+        else:
+            self.boost = self.maxBoost
 
         if self.charge < self.maxCharge:
             self.charge += time*10
+        else:
+            self.charge = self.maxCharge
 
         if self.xp >= (self.level * 100):
             self.xp = 0
@@ -339,7 +348,11 @@ class character:
                 self.health -= x.damage*time
 
             if x.duration <= 0:
-                pass
+                i = getEffectPosinList(x.type, self.effect)
+                try:
+                    del self.effect[i]
+                except:
+                    print(f"Effect not deletet: {i}")
 
         if self.team == 0:
             self.target = py.mouse.get_pos()
@@ -382,11 +395,20 @@ class character:
             if x.duration > 0:
                 x.duration -= time
 
+    def ai(self):
+        pass
+
     def getHit(self, weapon):
         self.effectDuration = weapon.effectDuration
 
-        if weapon.effect != None:
-            self.effect.append(effect(weapon.type, weapon.effectDuration, weapon.damage/10))
+        if weapon.effect is not None:
+            if checkList(self.effect, weapon.effect):
+                effectPos = getEffectPosinList(weapon.effect, self.effect)
+                self.effect[effectPos].effectDuration = weapon.effectDuration
+                self.effect[effectPos].effectDamage = weapon.effectDamage
+
+            else:
+                self.effect.append(effect(weapon.type, weapon.effectDuration, weapon.damage/10, weapon.color))
 
         if self.armor.type == weapon.type:
             self.health -= weapon.damage/2
@@ -410,6 +432,28 @@ class character:
 
         self.cooldown = self.maxCooldown
 
+class sliderWidget:
+    def __init__(self, color1, color2, pos, size, surface):
+        self.color1 = color1
+        self.color2 = color2
+        self.pos1 = pos
+        self.size = size
+        self.surface = surface
+
+    def draw(self, var, maxVar, pos):
+        self.pos1 = pos
+        self.pos2 = (pos[0]*0.9, pos[1]*0.9)
+        self.size2 = (self.size[0]*0.8, self.size[0]*0.8)
+        self.var = var
+        self.max = maxVar
+
+        py.draw.rect(self.surface, self.color1, (self.pos1[0], self.pos1[1], self.size[0], self.size[1]))
+        py.draw.rect(self.surface, self.color2, (self.pos2[1]+self.size2[1]/2, self.pos2[1]+self.size2[1]/2, self.size2[0], self.size2[1]))
+        
+        i = self.var / self.max
+
+        py.draw.rect(gamesurf, RED, (self.pos2[1]+self.size2[1]/2, self.pos2[1]+self.size2[1]/2, int(self.size2[0]*i), self.size2[1]))
+
 class textWidget:
     def __init__(self, font, color, pos, surface):
         self.font = font
@@ -421,6 +465,45 @@ class textWidget:
         widget = self.font.render(str(text), True, self.color)
 
         self.surface.blit(widget, self.pos)
+
+class icon:
+    def __init__(self, texture, color1, color2, color3, pos, surface):
+        self.texture = texture
+        self.color1 = color1
+        self.color2 = color2
+        self.color3 = color3
+        self.pos = pos
+        self.surface = surface
+    
+    def draw(self, pos):
+        self.pos = pos
+
+        sculpt(self.pos, self.texture, self.color1, self.color2, self.color3, 5)
+
+class iconAndText:
+    def __init__(self, texture, color1, color2, color3, scale, font, textColor, backroundColor, backroundSize, text, pos, surface):
+        self.texture = texture
+        self.color1 = color1
+        self.color2 = color2
+        self.color3 = color3
+        self.scale = scale
+        self.font = font
+        self.textColor = textColor
+        self.backroundColor = backroundColor
+        self.backroundSize = backroundSize
+        self.text = text
+        self.pos = pos
+        self.surface = surface
+    
+    def draw(self, pos):
+        self.pos = pos
+
+        #py.draw.rect(self.surface, self.backroundColor, (self.pos[0]-100, self.pos[1]-(self.backroundSize[1]/2), self.backroundSize[0], self.backroundSize[1])) #FIX
+
+        widget = self.font.render(str(self.text), True, self.textColor)
+
+        sculpt(self.pos, self.texture, self.color1, self.color2, self.color3, self.scale)
+        self.surface.blit(widget, (self.pos[0]+50, self.pos[1]))
 
 # Declare Functions
 
@@ -517,7 +600,7 @@ def checkHits(projectiles, objects):
     for x in projectiles:
         for y in objects:
             if x.team != y.team:
-                if y.type == "tower" and checkRectangle():
+                if y.type == "tower" and checkRectangle(py.Rect(y.pos[0], y.pos[1], y.size[0], y.size[1]), x):
                     y.getHit(x.weapon)
                 elif y.type == "player" and checkCircle(y, x, y.radius):
                     y.getHit(x.weapon)
@@ -529,8 +612,8 @@ def checkHits(projectiles, objects):
 
                     try:
                         del projectiles[x.pos]
-                    except IndexError:
-                        print(f"Projectile not deletet, pos: {x.pos}")
+                    except:
+                        print(f"Projectile not deletet: {x.pos}")
 
 def offsetTrajectory(start, splatter):
     start[0] = int(start[0])
@@ -572,7 +655,7 @@ def appendTower(pos, team, weapon, level, accuracy):
 def calcDist(pos1, pos2):
     distance = py.Vector2(pos2[0]-pos1[0], pos2[1]-pos1[1])
 
-    return(distance.length())
+    return distance.length()
 
 def positiveNum(number):
     if number < 0:
@@ -580,8 +663,16 @@ def positiveNum(number):
 
     return number
 
-def sculpt(pos, texture, offset):
-    return True
+def sculpt(pos, texture, color1, color2, color3, scale):
+    pass
+
+def getEffectPosinList(effect, list):
+    if len(list) <= 1:
+        return 0
+    else:
+        for x in range(len(list)-1):
+            if list[x].type == effect:
+                return x
 
 def getNearestChar(start):
     distance = []
@@ -599,6 +690,7 @@ def getNearestChar(start):
 def getNearestFriendlyChar(start):
     distance = []
     minDist = [0, 0]
+
     if len(characters) > 1:
         for x in characters:
             if start.team == x.team:
@@ -630,6 +722,9 @@ def mindTransport(start, target):
     characters[start.seq].team = 1
 
 def die():
+    global playing
+    global dead
+
     playing = False # Temporary
     dead = True
     reset()
@@ -660,7 +755,7 @@ def reset():
     towers = []
 
     pos = (ra.randrange(100, WINDOWWIDTH-100), ra.randrange(100, WINDOWHEIGHT-100))
-    characters.append(character(pos, 0, oldWeapon, oldArmor, baseSpeed))
+    characters.append(character(pos, 0, oldWeapon, oldArmor, baseSpeed, False))
 
     while len(spawnPoints) < 5:
         fails = 0
@@ -701,7 +796,7 @@ def reset():
 
 # Initialsation
 
-if py.get_init() == False:
+if not py.get_init():
     py.init()
 
 gamesurf = py.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT))
@@ -807,7 +902,7 @@ while True:
                         appendTower(characters[char].pos, characters[char].team, characters[char].towerWeapon, characters[char].level, characters[char].towerAccuracy)
 
                     elif event.key == py.K_e and characters[char].resources >= items[findObjectInList(items, "medKit")].cost and not pause:
-                        characters[char].health += items[findObjectInList(items, "medKit")].healing
+                        characters[char].health += (items[findObjectInList(items, "medKit")].healing/100)*characters[char].maxHealth
 
                         if characters[char].health > characters[char].maxHealth:
                             characters[char].health = characters[char].maxHealth
@@ -834,9 +929,10 @@ while True:
                                 break
 
                     else:
-                        if event.button == 2 and characters[char].charge >= 100:
-                            characters[char].pos = py.mouse.get_pos()
-                            characters[char].effect.append("shocked")
+                        if event.button == 3 and characters[char].charge >= 100:
+                            characters[char].pos[0] = py.mouse.get_pos()[0]
+                            characters[char].pos[1] = py.mouse.get_pos()[1]
+                            characters[char].effect.append(effect("shocked", 1.5, 0, (64, 56, 201)))
                             characters[char].effectDuration = 2.5
 
             if not pause:
@@ -892,7 +988,10 @@ while True:
                 if waveCooldown > 0:
                     for x in characters:
                         if x.team != 0:
-                            del characters[x.seq]
+                            try:
+                                del characters[x.seq]
+                            except:
+                                print(f"Character not deletet: {x.seq}")
                     waveCooldownText = textWidget(titleFont, GREEN, (WINDOWWIDTH/2, 20), gamesurf)
                     waveCooldownText.draw(round(waveCooldown, 1))
                     waveCooldown -= time
@@ -909,7 +1008,7 @@ while True:
                             try:
                                 del projectiles[x.pos]
                             except:
-                                print(f"Projectile not deletet, pos: {x.pos}")
+                                print(f"Projectile not deletet: {x.pos}")
 
                 for x in range(0, len(projectiles)):
                     projectiles[x].pos = x
@@ -930,7 +1029,7 @@ while True:
                             try:
                                 del characters[x.seq]
                             except:
-                                print(f"Cant delete character: {x.seq}")
+                                print(f"Character not deletet: {x.seq}")
 
                 for x in spawnPoints:
                     x.draw()
@@ -951,7 +1050,7 @@ while True:
                         try:
                             del projectiles[x.pos]
                         except:
-                            print(f"Cant Delete Projectile {x.pos}")
+                            print(f"Projectile not deletet: {x.pos}")
 
                 for x in projectiles:
                     x.draw()
@@ -974,12 +1073,30 @@ while True:
                     resourcesText = textWidget(buttonFont, GREEN, ((WINDOWWIDTH-200), 20), gamesurf)
                     resourcesText.draw(f"Resources: {round(characters[char].resources, 1)}")
 
+                    equippedItemIconText = iconAndText(testIcon, testIcon, testIcon, testIcon, 2, itemFont, GREEN, LIGHTGREY, (80, 20), f"{items[0].displayName}: {characters[char].inventory.get(items[0].name).amount}", (WINDOWWIDTH-180, 80), gamesurf)
+                    equippedItemIconText.draw(equippedItemIconText.pos)
+
+                    #reloadSlider = sliderWidget(LIGHTGREY, GREY, (180, 20), (50, 20), gamesurf)
+                    #reloadSlider.draw(characters[char].maxCooldown, characters[char].cooldown, reloadSlider.pos1)
+
+                    for x in characters[char].effect:
+                        effectIcon = icon(testIcon, testIcon, testIcon, testIcon, (40, WINDOWHEIGHT-80), gamesurf)
+                        effectIcon.draw(effectIcon.pos)
+
                 if viewMode > 2:
                     xpText = textWidget(buttonFont, GREEN, (20, 80), gamesurf)
                     xpText.draw(f"XP: {int(characters[char].xp)}/{characters[char].level*100}")
 
+                    #inventoryText = iconAndText(testIcon, testIcon, testIcon, testIcon, 2, buttonFont, GREEN, LIGHTGREY, (60, 20), items[0].displayName, (WINDOWWIDTH-220, 60), gamesurf)
+                    #inventoryText.draw(inventoryText.pos)
+
+                    for x in characters[char].effect:
+                        displayName = f"{x.type[:1].upper()}{x.type[1:]}"
+                        effectIconText = iconAndText(testIcon, testIcon, testIcon, testIcon, 5, effectFont, x.color, BLACK, (0, 0), displayName, (40, WINDOWHEIGHT-80), gamesurf)
+                        effectIconText.draw(effectIcon.pos)
+
                 if viewMode > 3:
-                    fpsText = textWidget(buttonFont, GREEN, ((WINDOWWIDTH-180), 60), gamesurf)
+                    fpsText = textWidget(buttonFont, GREEN, ((WINDOWWIDTH/2), 20), gamesurf)
                     fpsText.draw(f"FPS: {int(clock.get_fps())}")
 
     else:
@@ -1055,7 +1172,7 @@ while True:
         characters[char].weapon = weapons[weaponIndex]
         characters[char].armor = armors[armorIndex]
 
-    if if_break == False:
+    if not if_break:
         py.display.update()
 
     if setFPS <= 0 or setFPS >= 120:

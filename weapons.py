@@ -37,7 +37,7 @@ class weapon:
     def sniper(self):
         self.name = "sniper"
         self.displayName = "Sniper"
-        self.damage = 30
+        self.damage = 9
         self.range = 1000
         self.speed = 350
         self.reloadTime = 330
@@ -51,7 +51,7 @@ class weapon:
     def rifle(self):
         self.name = "rifle"
         self.displayName = "Rifle"
-        self.damage = 5
+        self.damage = 2
         self.range = 650
         self.speed = 200
         self.reloadTime = 40
@@ -65,7 +65,7 @@ class weapon:
     def flamethrower(self):
         self.name = "flamethrower"
         self.displayName = "Flamethrower"
-        self.damage = 1
+        self.damage = 0.5
         self.range = 300
         self.speed = 20
         self.reloadTime = 10
@@ -93,10 +93,10 @@ class weapon:
     def plasmaRifle(self):
         self.name = "plasmaRifle"
         self.displayName = "Plasma Rifle"
-        self.damage = 4
+        self.damage = 2
         self.range = 500
         self.speed = 300
-        self.reloadTime = 70
+        self.reloadTime = 20
         self.power = 10
         self.color = (64, 56, 201)
         self.type = damageTypes.get("plasma")
@@ -107,7 +107,7 @@ class weapon:
     def laserRifle(self):
         self.name = "laserRifle"
         self.displayName = "Laser Rifle"
-        self.damage = 3
+        self.damage = 4
         self.range = 600
         self.speed = 400
         self.reloadTime = 80

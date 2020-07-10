@@ -1,6 +1,7 @@
 {
-    "python.pythonPath": "C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python38-32\\python.exe"
+    "python.pythonPath": "C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python38-32\\python.exe",
     "python.linting.pylintArgs": [
-        "--extension-pkg-whitelist=lxml"  // The extension is "lxml" not "1xml"
+        "--max-line-length=80",
+        "--disable=W0142,W0403,W0613,W0232,R0903,R0913,C0103,R0914,C0304,F0401,W0402,E1101,W0614,C0111,C0301"
     ]
 }
