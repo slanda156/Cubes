@@ -1,5 +1,11 @@
 <h1>Cubes</h1>
 
+<h2>Installation</h2>
+<ol>
+<li>Install <a href=https://www.python.org>Python</a></li>
+<li>Install Pygame with <code>pip install pygame</code></li>
+</ol>
+
 <h2>Controls</h2>
 <table>
     <tr>
@@ -39,8 +45,8 @@
 <ol>
 <li>Nothing</li>
 <li>Healthbar</li>
-<li>2. & Level, Resources</li>
-<li>3. & XP, Reload, Status</li>
+<li>2. & Level, Reload, Resources, Status Icons, Equiped Item</li>
+<li>3. & XP, Status Text, Inventory</li>
 <li>4. & Performance</li>
 </ol>
 
