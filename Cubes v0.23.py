@@ -17,17 +17,6 @@ QUALITY = (16, 9)
 WINDOWWIDTH = 2040
 WINDOWHEIGHT = int((WINDOWWIDTH/QUALITY[0])*QUALITY[1])
 
-# Contorls
-
-# WASD      :   Movement
-# T         :   Skip Build Time
-# F         :   Place Tower     |BUG|
-# E         :   Use Equiped Item (Currently just Medkits)
-# TAB       :   Switch Hud Modes (0: Nothin; 1: Health; 2: 1 & Level, Resources; 3: 2 & XP, Reload, Status; 4: 3 & Performance)
-# Spacebar  :   Mind Transfer   |BUG|
-# LMB       :   Shoot
-# RMB       :   Teleport        |BUG|
-
 version = "0.23"
 
 # Define Colors
@@ -599,6 +588,7 @@ def getNearestChar(start):
 def getNearestFriendlyChar(start):
     distance = []
     minDist = [0, 0]
+
     if len(characters) > 1:
         for x in characters:
             if start.team == x.team:
