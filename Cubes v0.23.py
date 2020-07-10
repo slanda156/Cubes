@@ -36,6 +36,8 @@ py.font.init()
 
 buttonFont = py.font.SysFont("Comic Sans Ms", 24)
 titleFont = py.font.SysFont("Comic Sans Ms", 35)
+itemFont = py.font.SysFont("Comic Sans Ms", 18)
+effectFont = py.font.SysFont("Comic Sans Ms", 18)
 
 # Define Textures
 boss = {
@@ -46,6 +48,17 @@ boss = {
     1, 1, 1, 1, 1, 1, 1, 1,
     0, 0, 1, 1, 1, 1, 0, 0,
     0, 0, 1, 0, 0, 1, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0
+}
+
+testIcon = {
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0
 }
 
@@ -182,10 +195,11 @@ class projectile:
         self.range -= self.offset.length()
 
 class effect:
-    def __init__(self, effectType, effectDuration, effectDamage):
+    def __init__(self, effectType, effectDuration, effectDamage, effectColor):
         self.type = effectType
         self.duration = effectDuration
         self.damage = effectDamage
+        self.color = effectColor
 
 class tower:
     def __init__(self, pos, team, weapon, level, accuracy):
@@ -242,7 +256,7 @@ class tower:
         self.effectDuration = weapon.effectDuration
 
         if weapon.effect is not None:
-            self.effect.append(effect(weapon.type, weapon.effectDuration, weapon.effectDamage))
+            self.effect.append(effect(weapon.type, weapon.effectDuration, weapon.effectDamage, weapon.color))
 
         self.health -= weapon.damage
 
@@ -285,6 +299,7 @@ class character:
         self.towerAccuracy = 1
         self.towerWeapon = weapons[findObjectInList(weapons, "rifle")]
         self.accuracy = 1
+        self.inventory = {items[0].name: items[0]}
 
         if self.armor.type == physical:
             self.maxHealth = float(10 * self.level * 2)
@@ -305,6 +320,8 @@ class character:
             self.movementSpeed = int(speed)
 
     def draw(self):
+        self.maxCooldown = self.weapon.reloadTime / 100
+
         if self.armor.type == physical:
             self.maxHealth = float(10 * self.level * 2)
         else:
@@ -391,7 +408,7 @@ class character:
                 self.effect[effectPos].effectDamage = weapon.effectDamage
 
             else:
-                self.effect.append(effect(weapon.type, weapon.effectDuration, weapon.damage/10))
+                self.effect.append(effect(weapon.type, weapon.effectDuration, weapon.damage/10, weapon.color))
 
         if self.armor.type == weapon.type:
             self.health -= weapon.damage/2
@@ -415,6 +432,28 @@ class character:
 
         self.cooldown = self.maxCooldown
 
+class sliderWidget:
+    def __init__(self, color1, color2, pos, size, surface):
+        self.color1 = color1
+        self.color2 = color2
+        self.pos1 = pos
+        self.size = size
+        self.surface = surface
+
+    def draw(self, var, maxVar, pos):
+        self.pos1 = pos
+        self.pos2 = (pos[0]*0.9, pos[1]*0.9)
+        self.size2 = (self.size[0]*0.8, self.size[0]*0.8)
+        self.var = var
+        self.max = maxVar
+
+        py.draw.rect(self.surface, self.color1, (self.pos1[0], self.pos1[1], self.size[0], self.size[1]))
+        py.draw.rect(self.surface, self.color2, (self.pos2[1]+self.size2[1]/2, self.pos2[1]+self.size2[1]/2, self.size2[0], self.size2[1]))
+        
+        i = self.var / self.max
+
+        py.draw.rect(gamesurf, RED, (self.pos2[1]+self.size2[1]/2, self.pos2[1]+self.size2[1]/2, int(self.size2[0]*i), self.size2[1]))
+
 class textWidget:
     def __init__(self, font, color, pos, surface):
         self.font = font
@@ -426,6 +465,45 @@ class textWidget:
         widget = self.font.render(str(text), True, self.color)
 
         self.surface.blit(widget, self.pos)
+
+class icon:
+    def __init__(self, texture, color1, color2, color3, pos, surface):
+        self.texture = texture
+        self.color1 = color1
+        self.color2 = color2
+        self.color3 = color3
+        self.pos = pos
+        self.surface = surface
+    
+    def draw(self, pos):
+        self.pos = pos
+
+        sculpt(self.pos, self.texture, self.color1, self.color2, self.color3, 5)
+
+class iconAndText:
+    def __init__(self, texture, color1, color2, color3, scale, font, textColor, backroundColor, backroundSize, text, pos, surface):
+        self.texture = texture
+        self.color1 = color1
+        self.color2 = color2
+        self.color3 = color3
+        self.scale = scale
+        self.font = font
+        self.textColor = textColor
+        self.backroundColor = backroundColor
+        self.backroundSize = backroundSize
+        self.text = text
+        self.pos = pos
+        self.surface = surface
+    
+    def draw(self, pos):
+        self.pos = pos
+
+        #py.draw.rect(self.surface, self.backroundColor, (self.pos[0]-100, self.pos[1]-(self.backroundSize[1]/2), self.backroundSize[0], self.backroundSize[1])) #FIX
+
+        widget = self.font.render(str(self.text), True, self.textColor)
+
+        sculpt(self.pos, self.texture, self.color1, self.color2, self.color3, self.scale)
+        self.surface.blit(widget, (self.pos[0]+50, self.pos[1]))
 
 # Declare Functions
 
@@ -585,7 +663,7 @@ def positiveNum(number):
 
     return number
 
-def sculpt(pos, texture, offset):
+def sculpt(pos, texture, color1, color2, color3, scale):
     pass
 
 def getEffectPosinList(effect, list):
@@ -854,7 +932,7 @@ while True:
                         if event.button == 3 and characters[char].charge >= 100:
                             characters[char].pos[0] = py.mouse.get_pos()[0]
                             characters[char].pos[1] = py.mouse.get_pos()[1]
-                            characters[char].effect.append(effect("shocked", 1.5, 0))
+                            characters[char].effect.append(effect("shocked", 1.5, 0, (64, 56, 201)))
                             characters[char].effectDuration = 2.5
 
             if not pause:
@@ -995,12 +1073,30 @@ while True:
                     resourcesText = textWidget(buttonFont, GREEN, ((WINDOWWIDTH-200), 20), gamesurf)
                     resourcesText.draw(f"Resources: {round(characters[char].resources, 1)}")
 
+                    equippedItemIconText = iconAndText(testIcon, testIcon, testIcon, testIcon, 2, itemFont, GREEN, LIGHTGREY, (80, 20), f"{items[0].displayName}: {characters[char].inventory.get(items[0].name).amount}", (WINDOWWIDTH-180, 80), gamesurf)
+                    equippedItemIconText.draw(equippedItemIconText.pos)
+
+                    #reloadSlider = sliderWidget(LIGHTGREY, GREY, (180, 20), (50, 20), gamesurf)
+                    #reloadSlider.draw(characters[char].maxCooldown, characters[char].cooldown, reloadSlider.pos1)
+
+                    for x in characters[char].effect:
+                        effectIcon = icon(testIcon, testIcon, testIcon, testIcon, (40, WINDOWHEIGHT-80), gamesurf)
+                        effectIcon.draw(effectIcon.pos)
+
                 if viewMode > 2:
                     xpText = textWidget(buttonFont, GREEN, (20, 80), gamesurf)
                     xpText.draw(f"XP: {int(characters[char].xp)}/{characters[char].level*100}")
 
+                    #inventoryText = iconAndText(testIcon, testIcon, testIcon, testIcon, 2, buttonFont, GREEN, LIGHTGREY, (60, 20), items[0].displayName, (WINDOWWIDTH-220, 60), gamesurf)
+                    #inventoryText.draw(inventoryText.pos)
+
+                    for x in characters[char].effect:
+                        displayName = f"{x.type[:1].upper()}{x.type[1:]}"
+                        effectIconText = iconAndText(testIcon, testIcon, testIcon, testIcon, 5, effectFont, x.color, BLACK, (0, 0), displayName, (40, WINDOWHEIGHT-80), gamesurf)
+                        effectIconText.draw(effectIcon.pos)
+
                 if viewMode > 3:
-                    fpsText = textWidget(buttonFont, GREEN, ((WINDOWWIDTH-180), 60), gamesurf)
+                    fpsText = textWidget(buttonFont, GREEN, ((WINDOWWIDTH/2), 20), gamesurf)
                     fpsText.draw(f"FPS: {int(clock.get_fps())}")
 
     else:
