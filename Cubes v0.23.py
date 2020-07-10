@@ -132,13 +132,13 @@ class spawnPoint:
                 if characters[findPlayerChar()].level // 1 >= 1:
                     allowedWeaponTypes.append(physical)
 
-                elif characters[findPlayerChar()].level // 3 >= 3:
+                elif characters[findPlayerChar()].level // 3 >= 1:
                     allowedWeaponTypes.append(fire)
 
-                elif characters[findPlayerChar()].level // 6 >= 6:
+                elif characters[findPlayerChar()].level // 6 >= 1:
                     allowedWeaponTypes.append(plasma)
 
-                elif characters[findPlayerChar()].level // 9 >= 9:
+                elif characters[findPlayerChar()].level // 9 >= 1:
                     allowedWeaponTypes.append(laser)
 
                 for y in allowedWeaponTypes:
