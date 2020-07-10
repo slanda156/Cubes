@@ -1,4 +1,4 @@
-from damageTypes import damageTypes
+#from damageTypes import damageTypes
 
 upgradeNum = 6
 

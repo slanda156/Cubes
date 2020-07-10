@@ -1,14 +1,14 @@
-import pygame as py
 import math
 import random as ra
+import pygame as py
 
 # Import classes
 
 from damageTypes import damageTypes
-from weapons import *
-from armor import *
-from item import *
-from upgrade import *
+from weapons import weaponNum, weapons, initWeapon
+from armor import armorNum, armors, initArmor
+from item import itemNum, items, initItem
+from upgrade import upgradeNum, upgrades, initUpgrade
 
 # Define the window
 i = 0
@@ -130,10 +130,10 @@ class spawnPoint:
                 elif characters[findPlayerChar()].level // 9 >= 1:
                     allowedWeaponTypes.append(laser)
 
-                for y in allowedWeaponTypes:
-                    for x in weapons:
-                        if x.type == y:
-                            allowedWeapons.append(x)
+                for a in allowedWeaponTypes:
+                    for b in weapons:
+                        if a.type == b:
+                            allowedWeapons.append(a)
 
                 if len(allowedWeapons) > 1:
                     weaponIn = ra.randrange(0, (len(allowedWeapons)-1))
@@ -164,7 +164,7 @@ class projectile:
                 self.dierection.scale_to_length(self.power*6)
             else:
                 self.dierection.scale_to_length(self.power)
-    
+
         self.offset = self.dierection
 
     def draw(self):
@@ -207,17 +207,14 @@ class tower:
 
     def draw(self):
         for x in self.effect:
-            if x.type == self.armor.type:
-                self.health -= x.damage
-            else:
-                self.health -= x.damage
+            self.health -= x.damage
 
             if x.duration <= 0:
                 pass
 
         self.target = py.mouse.get_pos()
 
-        if getNearestEnemieChar(self) != None:
+        if getNearestEnemieChar(self) is not None:
             self.target = getNearestEnemieChar(self).pos
 
         if not checkList(self.effect, "shocked"):
@@ -239,14 +236,10 @@ class tower:
     def getHit(self, weapon):
         self.effectDuration = weapon.effectDuration
 
-        if weapon.effect != None:
+        if weapon.effect is not None:
             self.effect.append(effect(weapon.type, weapon.effectDuration, weapon.effectDamage))
 
-        if self.armor.type == weapon.type:
-            self.health -= weapon.damage/2
-
-        else:
-            self.health -= weapon.damage
+        self.health -= weapon.damage
 
     def shoot(self, target):
         appendProjectiles(self.pos, py.Vector2(target[0]-self.pos[0], target[1]-self.pos[1]), self.weapon.power, self.weapon, self.team, self.accuracy)
@@ -374,7 +367,7 @@ class character:
     def getHit(self, weapon):
         self.effectDuration = weapon.effectDuration
 
-        if weapon.effect != None:
+        if weapon.effect is not None:
             if checkList(self.effect, weapon.effect):
                 effectPos = getEffectPosinList(weapon.effect, self.effect)
                 self.effect[effectPos].effectDuration = weapon.effectDuration
@@ -512,7 +505,7 @@ def checkHits(projectiles, objects):
     for x in projectiles:
         for y in objects:
             if x.team != y.team:
-                if y.type == "tower" and checkRectangle():
+                if y.type == "tower" and checkRectangle(py.Rect(y.pos[0], y.pos[1], y.size[0], y.size[1]), x):
                     y.getHit(x.weapon)
                 elif y.type == "player" and checkCircle(y, x, y.radius):
                     y.getHit(x.weapon)
@@ -567,7 +560,7 @@ def appendTower(pos, team, weapon, level, accuracy):
 def calcDist(pos1, pos2):
     distance = py.Vector2(pos2[0]-pos1[0], pos2[1]-pos1[1])
 
-    return(distance.length())
+    return distance.length()
 
 def positiveNum(number):
     if number < 0:
@@ -631,6 +624,9 @@ def mindTransport(start, target):
     characters[start.seq].team = 1
 
 def die():
+    global playing
+    global dead
+
     playing = False # Temporary
     dead = True
     reset()
@@ -702,7 +698,7 @@ def reset():
 
 # Initialsation
 
-if py.get_init() == False:
+if not py.get_init():
     py.init()
 
 gamesurf = py.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT))
@@ -1059,7 +1055,7 @@ while True:
         characters[char].weapon = weapons[weaponIndex]
         characters[char].armor = armors[armorIndex]
 
-    if if_break == False:
+    if not if_break:
         py.display.update()
 
     if setFPS <= 0 or setFPS >= 120:
