@@ -121,22 +121,22 @@ class spawnPoint:
                 if characters[findPlayerChar()].level // 1 >= 1:
                     allowedWeaponTypes.append(physical)
 
-                elif characters[findPlayerChar()].level // 3 >= 1:
+                if characters[findPlayerChar()].level // 3 >= 1:
                     allowedWeaponTypes.append(fire)
 
-                elif characters[findPlayerChar()].level // 6 >= 1:
+                if characters[findPlayerChar()].level // 6 >= 1:
                     allowedWeaponTypes.append(plasma)
 
-                elif characters[findPlayerChar()].level // 9 >= 1:
+                if characters[findPlayerChar()].level // 9 >= 1:
                     allowedWeaponTypes.append(laser)
 
                 for a in allowedWeaponTypes:
                     for b in weapons:
-                        if a.type == b:
-                            allowedWeapons.append(a)
+                        if b.type == a:
+                            allowedWeapons.append(b)
 
                 if len(allowedWeapons) > 1:
-                    weaponIn = ra.randrange(0, (len(allowedWeapons)-1))
+                    weaponIn = ra.randrange(0, len(allowedWeapons))
                 else:
                     weaponIn = 0
                 armorIn = ra.randrange(0, armorNum)
@@ -210,7 +210,12 @@ class tower:
             self.health -= x.damage
 
             if x.duration <= 0:
-                pass
+                i = getEffectPosinList(x.type, self.effect)
+                try:
+                    del self.effect[i]
+                except:
+                    print(f"Effect not deletet: {i}")
+
 
         self.target = py.mouse.get_pos()
 
@@ -258,7 +263,8 @@ class tower:
         py.draw.rect(gamesurf, RED, (pos[0]-18, pos[1]-4, int(36*i), 8))
 
 class character:
-    def __init__(self, pos, team, weapon, armor, speed):
+    def __init__(self, pos, team, weapon, armor, speed, controlled=True):
+        self.controlled = controlled
         self.pos = [pos[0], pos[1]]
         self.seq = 0
         self.team = team
@@ -306,9 +312,13 @@ class character:
 
         if self.boost > self.maxBoost:
             self.boost = self.maxBoost
+        else:
+            self.boost = self.maxBoost
 
         if self.charge < self.maxCharge:
             self.charge += time*10
+        else:
+            self.charge = self.maxCharge
 
         if self.xp >= (self.level * 100):
             self.xp = 0
@@ -321,7 +331,11 @@ class character:
                 self.health -= x.damage*time
 
             if x.duration <= 0:
-                pass
+                i = getEffectPosinList(x.type, self.effect)
+                try:
+                    del self.effect[i]
+                except:
+                    print(f"Effect not deletet: {i}")
 
         if self.team == 0:
             self.target = py.mouse.get_pos()
@@ -363,6 +377,9 @@ class character:
         for x in self.effect:
             if x.duration > 0:
                 x.duration -= time
+
+    def ai(self):
+        pass
 
     def getHit(self, weapon):
         self.effectDuration = weapon.effectDuration
@@ -572,9 +589,12 @@ def sculpt(pos, texture, offset):
     pass
 
 def getEffectPosinList(effect, list):
-    for x in range(len(list)-1):
-        if list[x].type == effect:
-            return x
+    if len(list) <= 1:
+        return 0
+    else:
+        for x in range(len(list)-1):
+            if list[x].type == effect:
+                return x
 
 def getNearestChar(start):
     distance = []
@@ -657,7 +677,7 @@ def reset():
     towers = []
 
     pos = (ra.randrange(100, WINDOWWIDTH-100), ra.randrange(100, WINDOWHEIGHT-100))
-    characters.append(character(pos, 0, oldWeapon, oldArmor, baseSpeed))
+    characters.append(character(pos, 0, oldWeapon, oldArmor, baseSpeed, False))
 
     while len(spawnPoints) < 5:
         fails = 0
@@ -832,7 +852,8 @@ while True:
 
                     else:
                         if event.button == 3 and characters[char].charge >= 100:
-                            characters[char].pos = py.mouse.get_pos()
+                            characters[char].pos[0] = py.mouse.get_pos()[0]
+                            characters[char].pos[1] = py.mouse.get_pos()[1]
                             characters[char].effect.append(effect("shocked", 1.5, 0))
                             characters[char].effectDuration = 2.5
 
