@@ -1,4 +1,3 @@
-<<<<<<< Updated upstream:Cubes v0.23.py
 import pygame as py
 import math
 import random as ra
@@ -2245,4 +2244,3 @@ while True:
         clock.tick(120)
     else:
         clock.tick(setFPS)
->>>>>>> Stashed changes:Cubes.py
