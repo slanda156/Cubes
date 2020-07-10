@@ -10,6 +10,7 @@ class item:
     def __init__(self, index):
         self.name = "None"
         self.displayName = "None"
+        self.amount = 1
         self.healing = 0
         self.cost = 0
 
