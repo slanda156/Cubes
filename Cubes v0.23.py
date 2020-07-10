@@ -375,7 +375,13 @@ class character:
         self.effectDuration = weapon.effectDuration
 
         if weapon.effect != None:
-            self.effect.append(effect(weapon.type, weapon.effectDuration, weapon.damage/10))
+            if checkList(self.effect, weapon.effect):
+                effectPos = getEffectPosinList(weapon.effect, self.effect)
+                self.effect[effectPos].effectDuration = weapon.effectDuration
+                self.effect[effectPos].effectDamage = weapon.effectDamage
+
+            else:
+                self.effect.append(effect(weapon.type, weapon.effectDuration, weapon.damage/10))
 
         if self.armor.type == weapon.type:
             self.health -= weapon.damage/2
@@ -518,8 +524,8 @@ def checkHits(projectiles, objects):
 
                     try:
                         del projectiles[x.pos]
-                    except IndexError:
-                        print(f"Projectile not deletet, pos: {x.pos}")
+                    except:
+                        print(f"Projectile not deletet: {x.pos}")
 
 def offsetTrajectory(start, splatter):
     start[0] = int(start[0])
@@ -570,7 +576,12 @@ def positiveNum(number):
     return number
 
 def sculpt(pos, texture, offset):
-    return True
+    pass
+
+def getEffectPosinList(effect, list):
+    for x in range(len(list)-1):
+        if list[x].type == effect:
+            return x
 
 def getNearestChar(start):
     distance = []
@@ -824,9 +835,9 @@ while True:
                                 break
 
                     else:
-                        if event.button == 2 and characters[char].charge >= 100:
+                        if event.button == 3 and characters[char].charge >= 100:
                             characters[char].pos = py.mouse.get_pos()
-                            characters[char].effect.append("shocked")
+                            characters[char].effect.append(effect("shocked", 1.5, 0))
                             characters[char].effectDuration = 2.5
 
             if not pause:
@@ -882,7 +893,10 @@ while True:
                 if waveCooldown > 0:
                     for x in characters:
                         if x.team != 0:
-                            del characters[x.seq]
+                            try:
+                                del characters[x.seq]
+                            except:
+                                print(f"Character not deletet: {x.seq}")
                     waveCooldownText = textWidget(titleFont, GREEN, (WINDOWWIDTH/2, 20), gamesurf)
                     waveCooldownText.draw(round(waveCooldown, 1))
                     waveCooldown -= time
@@ -899,7 +913,7 @@ while True:
                             try:
                                 del projectiles[x.pos]
                             except:
-                                print(f"Projectile not deletet, pos: {x.pos}")
+                                print(f"Projectile not deletet: {x.pos}")
 
                 for x in range(0, len(projectiles)):
                     projectiles[x].pos = x
@@ -920,7 +934,7 @@ while True:
                             try:
                                 del characters[x.seq]
                             except:
-                                print(f"Cant delete character: {x.seq}")
+                                print(f"Character not deletet: {x.seq}")
 
                 for x in spawnPoints:
                     x.draw()
@@ -941,7 +955,7 @@ while True:
                         try:
                             del projectiles[x.pos]
                         except:
-                            print(f"Cant Delete Projectile {x.pos}")
+                            print(f"Projectile not deletet: {x.pos}")
 
                 for x in projectiles:
                     x.draw()
