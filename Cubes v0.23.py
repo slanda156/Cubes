@@ -105,8 +105,8 @@ class spawnPoint:
     def __init__(self, pos, team):
         self.pos = pos
         self.team = team
-        self.maxCooldown = 5
-        self.minCooldown = 2
+        self.maxCooldown = 7
+        self.minCooldown = 4
         self.cooldown = self.maxCooldown
 
     def draw(self):
@@ -824,7 +824,7 @@ while True:
                         appendTower(characters[char].pos, characters[char].team, characters[char].towerWeapon, characters[char].level, characters[char].towerAccuracy)
 
                     elif event.key == py.K_e and characters[char].resources >= items[findObjectInList(items, "medKit")].cost and not pause:
-                        characters[char].health += items[findObjectInList(items, "medKit")].healing
+                        characters[char].health += (items[findObjectInList(items, "medKit")].healing/100)*characters[char].maxHealth
 
                         if characters[char].health > characters[char].maxHealth:
                             characters[char].health = characters[char].maxHealth
