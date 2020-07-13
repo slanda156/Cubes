@@ -2,8 +2,8 @@
 
 <h2>Installation</h2>
 <ol>
-<li>Install <a href=https://www.python.org>Python</a></li>
-<li>Install Pygame with <code>pip install pygame</code></li>
+<li>Download Reposite and unzip it</li>
+<li>Open <code>Cubes\build\Cubes/Cubes.exe</code></li>
 </ol>
 
 <h2>Controls</h2>
