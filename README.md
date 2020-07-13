@@ -1,5 +1,11 @@
 <h1>Cubes</h1>
 
+<h2>Installation</h2>
+<ol>
+<li>Download Reposite and unzip it</li>
+<li>Open <code>Cubes\build\Cubes/Cubes.exe</code></li>
+</ol>
+
 <h2>Controls</h2>
 <table>
     <tr>
@@ -39,8 +45,8 @@
 <ol>
 <li>Nothing</li>
 <li>Healthbar</li>
-<li>2. & Level, Resources</li>
-<li>3. & XP, Reload, Status</li>
+<li>2. & Level, Reload, Resources, Status Icons, Equiped Item</li>
+<li>3. & XP, Status Text, Inventory</li>
 <li>4. & Performance</li>
 </ol>
 
