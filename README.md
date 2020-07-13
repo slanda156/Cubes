@@ -3,7 +3,7 @@
 <h2>Installation</h2>
 <ol>
 <li>Download Reposite and unzip it</li>
-<li>Open <code>Cubes\build\Cubes/Cubes.exe</code></li>
+<li>Open <code>Cubes\dist\Cubes\Cubes.exe</code></li>
 </ol>
 
 <h2>Controls</h2>
