@@ -37,9 +37,11 @@ class weapon:
     def sniper(self):
         self.name = "sniper"
         self.displayName = "Sniper"
-        self.damage = 9
+        self.damage = 10
         self.range = 1000
         self.speed = 350
+        self.firingSpeed = 330
+        self.magSize = 5
         self.reloadTime = 330
         self.power = 3
         self.color = (100, 100, 100)
@@ -54,6 +56,8 @@ class weapon:
         self.damage = 2
         self.range = 650
         self.speed = 200
+        self.firingSpeed = 40
+        self.magSize = 30
         self.reloadTime = 40
         self.power = 2
         self.color = (100, 100, 100)
@@ -68,6 +72,8 @@ class weapon:
         self.damage = 0.5
         self.range = 300
         self.speed = 20
+        self.firingSpeed = 10
+        self.magSize = 100
         self.reloadTime = 10
         self.power = 6
         self.color = (252, 93, 25)
@@ -82,6 +88,8 @@ class weapon:
         self.damage = 10
         self.range = 500
         self.speed = 200
+        self.firingSpeed = 300
+        self.magSize = 8
         self.reloadTime = 300
         self.power = 20
         self.color = (64, 56, 201)
@@ -96,6 +104,8 @@ class weapon:
         self.damage = 2
         self.range = 500
         self.speed = 300
+        self.firingSpeed = 20
+        self.magSize = 25
         self.reloadTime = 20
         self.power = 10
         self.color = (64, 56, 201)
@@ -110,6 +120,8 @@ class weapon:
         self.damage = 4
         self.range = 600
         self.speed = 400
+        self.firingSpeed = 80
+        self.magSize = 20
         self.reloadTime = 80
         self.power = 5
         self.color = (255, 87, 196)
