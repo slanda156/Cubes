@@ -1,4 +1,5 @@
 import math
+import sys
 import random as ra
 import pygame as py
 
@@ -17,7 +18,7 @@ QUALITY = (16, 9)
 WINDOWWIDTH = 2040
 WINDOWHEIGHT = int((WINDOWWIDTH/QUALITY[0])*QUALITY[1])
 
-version = "0.23"
+version = "0.24"
 
 # Define Colors
 BLACK = (0, 0, 0)
@@ -36,6 +37,7 @@ py.font.init()
 
 buttonFont = py.font.SysFont("Comic Sans Ms", 24)
 titleFont = py.font.SysFont("Comic Sans Ms", 35)
+title2Font = py.font.SysFont("Comic Sans Ms", 65)
 itemFont = py.font.SysFont("Comic Sans Ms", 18)
 effectFont = py.font.SysFont("Comic Sans Ms", 18)
 
@@ -737,7 +739,6 @@ def die():
     global playing
     global dead
 
-    playing = False # Temporary
     dead = True
     reset()
 
@@ -852,12 +853,15 @@ try:
 
                 py.draw.rect(gamesurf, GREY, (resetButtonPos[0], resetButtonPos[1], resetButtonSize[0], resetButtonSize[1]))
                 resetButton = py.Rect(resetButtonPos[0], resetButtonPos[1], resetButtonSize[0], resetButtonSize[1])
-
+                
                 py.draw.rect(gamesurf, GREY, (menuButtonPos[0], menuButtonPos[1], menuButtonSize[0], menuButtonSize[1]))
                 menuButton = py.Rect(menuButtonPos[0], menuButtonPos[1], menuButtonSize[0], menuButtonSize[1])
 
+                deadText = textWidget(titleFont, RED, (WINDOWWIDTH/2-100, WINDOWHEIGHT*0.2), gamesurf)
+                deadText.draw("You are Dead")
+
                 resetText = textWidget(buttonFont, BLACK, (resetButtonPos[0]+(resetButtonSize[0]*0.22), resetButtonPos[1]), gamesurf)
-                resetText.draw("Play Again")
+                resetText.draw("Restart")
 
                 menuText = textWidget(buttonFont, BLACK, (menuButtonPos[0]+(menuButtonSize[0]*0.1), menuButtonPos[1]), gamesurf)
                 menuText.draw("Main Menu")
@@ -867,11 +871,11 @@ try:
                         if event.button == 1:
                             if resetButton.collidepoint(py.mouse.get_pos()):
                                 reset()
-                                pause = False
+                                dead = False
 
                             elif menuButton.collidepoint(py.mouse.get_pos()):
                                 playing = False
-                                pause = False
+                                dead = False
                                 break
 
             else:
@@ -938,7 +942,6 @@ try:
                                 elif menuButton.collidepoint(py.mouse.get_pos()):
                                     playing = False
                                     pause = False
-                                    break
 
                         else:
                             if event.button == 3 and characters[char].charge >= 100:
@@ -1112,6 +1115,10 @@ try:
                         fpsText.draw(f"FPS: {int(clock.get_fps())}")
 
         else:
+
+            titletext = textWidget(title2Font, (220, 220, 220), (WINDOWWIDTH/2-90, 150), gamesurf)
+            titletext.draw("Cubes")
+
             py.draw.rect(gamesurf, GREY, ((WINDOWWIDTH/2)-90, (WINDOWHEIGHT/3)+50, 180, 40))
             playRect = py.Rect((WINDOWWIDTH/2)-90, (WINDOWHEIGHT/3)+50, 180, 40)
 
@@ -1192,8 +1199,7 @@ try:
         else:
             clock.tick(setFPS)
 
-except IndexError:
-    print(f"An IndexError has occurred")
+except:
+    with open("crash_log.txt", "w") as f:
+        f.write(f"An Error hast occurred: {sys.exc_info()[0]}")
 
-except py.error:
-    pass
