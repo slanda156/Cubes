@@ -1,4 +1,5 @@
 import math
+import sys
 import random as ra
 import pygame as py
 
@@ -1192,8 +1193,6 @@ try:
         else:
             clock.tick(setFPS)
 
-except IndexError:
-    print(f"An IndexError has occurred")
-
-except py.error:
-    pass
+except:
+    with open("crash_log.txt", "w+") as f:
+        f.write(f"An Error hast occurred: {sys.exc_info()[0]}")

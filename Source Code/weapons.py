@@ -37,7 +37,7 @@ class weapon:
     def sniper(self):
         self.name = "sniper"
         self.displayName = "Sniper"
-        self.damage = 9
+        self.damage = 10
         self.range = 1000
         self.speed = 350
         self.reloadTime = 330
