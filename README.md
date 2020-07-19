@@ -6,6 +6,13 @@
 <li>Open <code>Cubes\Cubes.exe</code></li>
 </ol>
 
+<h2>Switching to beta</h2>
+<ol>
+<li>Click on Branches</li>
+<li>Search for the newes version and select it</li>
+<li>Follow the installation instructions</li>
+</ol>
+
 <h2>Controls</h2>
 <table>
     <tr>
