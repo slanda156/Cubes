@@ -2,6 +2,7 @@
 
 import math
 import sys
+import traceback
 import random as ra
 import pygame as py
 
@@ -21,6 +22,7 @@ WINDOWWIDTH = 2040
 WINDOWHEIGHT = int((WINDOWWIDTH/QUALITY[0])*QUALITY[1])
 
 version = "0.24"
+logFile = "Start of log file\n"
 
 # Define Colors
 BLACK = (0, 0, 0)
@@ -68,7 +70,7 @@ testIcon = {
 
 # Define Variables
 
-if_break = False
+looping = True
 playing = False
 pause = False
 dead = False
@@ -204,6 +206,24 @@ class effect:
         self.duration = effectDuration
         self.damage = effectDamage
         self.color = effectColor
+        self.pos = py.Vector2(0, 0)
+        self.counter = 1
+        self.particles = []
+
+    def draw(self, pos):
+        self.pos = pos
+        self.counter += time
+        new = False
+
+        if len(self.particles) < 4:
+            self.pos = offsetTrajectory(self.pos, 10)
+            self.particles.append([py.Rect(self.pos[0], self.pos[1], 4, 4), 2.5])
+
+        for x in self.particles:
+            x[1] -= time
+            if x[1] > 0:    
+                newColor = (self.color[0]-30, self.color[1]-30, self.color[2]-30)
+                py.draw.rect(gamesurf, newColor, x[0])
 
 class tower:
     def __init__(self, pos, team, weapon, level, accuracy):
@@ -226,14 +246,13 @@ class tower:
     def draw(self):
         for x in self.effect:
             self.health -= x.damage
-
+            
             if x.duration <= 0:
                 i = getEffectPosinList(x.type, self.effect)
                 try:
                     del self.effect[i]
                 except:
-                    print(f"Effect not deletet: {i}")
-
+                    logFile += f"Effect not deletet: {i}\n"
 
         self.target = py.mouse.get_pos()
         manual = True
@@ -263,7 +282,7 @@ class tower:
         self.effectDuration = weapon.effectDuration
 
         if weapon.effect is not None:
-            self.effect.append(effect(weapon.type, weapon.effectDuration, weapon.effectDamage, weapon.color))
+            self.effect.append(effect(weapon.effect, weapon.effectDuration, weapon.effectDamage, weapon.color))
 
         self.health -= weapon.damage
 
@@ -284,7 +303,7 @@ class tower:
         py.draw.rect(gamesurf, RED, (pos[0]-18, pos[1]-4, int(36*i), 8))
 
 class character:
-    def __init__(self, pos, team, weapon, armor, speed, controlled=True):
+    def __init__(self, pos, team, weapon, armor, speed, controlled=False):
         self.controlled = controlled
         self.pos = [pos[0], pos[1]]
         self.seq = 0
@@ -359,34 +378,26 @@ class character:
                 try:
                     del self.effect[i]
                 except:
-                    print(f"Effect not deletet: {i}")
-
-        if self.team == 0:
+                    logFile += f"Effect not deletet: {i}\n"
+        if self.controlled:
             self.target = py.mouse.get_pos()
         else:
             self.target = characters[findPlayerChar()].pos
 
-        if not checkList(self.effect, "shocked"):
-            self.dir = py.Vector2(self.target[0]-self.pos[0], self.target[1]-self.pos[1])
-            if self.team != 0:
-                self.dir.scale_to_length(int(self.movementSpeed * time))
-                if calcDist(self.pos, self.target) > (self.weapon.range/2):
-                    if self.boost > 0 and calcDist(self.pos, self.target) > self.weapon.range:
-                        self.dir.scale_to_length(int((self.movementSpeed * 2) * time))
-                        self.boost -= 20
-                    else:
-                        self.boost += 10
+        self.dir = py.Vector2(self.target[0]-self.pos[0], self.target[1]-self.pos[1])
 
-                    self.pos[0] += int(self.dir[0])
-                    self.pos[1] += int(self.dir[1])
-                else:
-                    self.pos[0] -= int(self.dir[0])
-                    self.pos[1] -= int(self.dir[1])
+        if not self.controlled:
+            self.ai()
+
+        self.dir.scale_to_length(30)
+
+        for x in self.effect:
+            if x.duration > 0:
+                x.duration -= time
+
+            x.draw(self.pos)
 
         py.draw.circle(gamesurf, (200, 200, 200), (int(self.pos[0]), int(self.pos[1])), self.radius)
-
-        if self.dir.length() != 0:
-            self.dir.scale_to_length(30)
 
         py.draw.line(gamesurf, self.weapon.color, self.pos, (self.pos + self.dir), int(self.radius/4))
 
@@ -394,16 +405,33 @@ class character:
 
         self.cooldown -= time
 
-        if self.team != 0 and self.cooldown <= 0 and not checkList(self.effect, "shocked"):
-            if calcDist(self.pos, self.target) < self.weapon.range:
-                self.shoot()
-
-        for x in self.effect:
-            if x.duration > 0:
-                x.duration -= time
-
     def ai(self):
-        pass
+        if not checkList(self.effect, "shocked"):
+            if self.cooldown <= 0:
+                if calcDist(self.pos, self.target) < self.weapon.range:
+                    self.shoot()
+
+            self.dir.scale_to_length(int(self.movementSpeed * time))
+
+            if calcDist(self.pos, self.target) > (self.weapon.range/2):
+                if self.boost > 0 and calcDist(self.pos, self.target) > self.weapon.range:
+                    self.dir.scale_to_length(int((self.movementSpeed * 2) * time))
+                    self.boost -= 20
+                else:
+                    self.boost += 10
+
+                self.pos[0] += int(self.dir[0])
+                self.pos[1] += int(self.dir[1])
+
+            else:
+                if self.boost > 0 and calcDist(self.pos, self.target) < (self.weapon.range/3):
+                    self.dir.scale_to_length(int((self.movementSpeed * 2) * time))
+                    self.boost -= 20
+                else:
+                    self.boost += 10
+
+                self.pos[0] -= int(self.dir[0])
+                self.pos[1] -= int(self.dir[1])
 
     def getHit(self, weapon):
         self.effectDuration = weapon.effectDuration
@@ -431,6 +459,9 @@ class character:
         py.draw.rect(gamesurf, LIGHTGREY, (pos[0]-18, pos[1]-4, 36, 8))
 
         i = self.health / self.maxHealth
+
+        if i > 1:
+            i = 1
 
         py.draw.rect(gamesurf, RED, (pos[0]-18, pos[1]-4, int(36*i), 8))
 
@@ -516,7 +547,7 @@ class iconAndText:
 
 def findPlayerChar():
     for x in characters:
-        if x.team == 0:
+        if x.controlled:
             return x.seq
 
 def canSeeTarget(start, target):
@@ -620,7 +651,7 @@ def checkHits(projectiles, objects):
                     try:
                         del projectiles[x.pos]
                     except:
-                        print(f"Projectile not deletet: {x.pos}")
+                        logFile += f"Projectile not deletet: {x.pos}\n"
 
 def offsetTrajectory(start, splatter):
     start[0] = int(start[0])
@@ -770,7 +801,7 @@ def reset():
     towers = []
 
     pos = (ra.randrange(100, WINDOWWIDTH-100), ra.randrange(100, WINDOWHEIGHT-100))
-    characters.append(character(pos, 0, oldWeapon, oldArmor, baseSpeed, False))
+    characters.append(character(pos, 0, oldWeapon, oldArmor, baseSpeed, True))
 
     while len(spawnPoints) < 5:
         fails = 0
@@ -832,10 +863,7 @@ weaponText = textWidget(buttonFont, weapons[0].color, ((WINDOWWIDTH/2)-70, (WIND
 
 reset()
 try:
-    while True:
-        if if_break:
-            break
-
+    while looping:
         gamesurf.fill(BLACK)
         time = (clock.get_time() / 1000)
         char = findPlayerChar()
@@ -869,7 +897,13 @@ try:
                 menuText.draw("Main Menu")
 
                 for event in py.event.get():
-                    if event.type == py.MOUSEBUTTONDOWN:
+                    if event.type == py.QUIT:
+                        py.display.quit()
+                        sys.exit()
+                        looping = False
+                        break
+
+                    elif event.type == py.MOUSEBUTTONDOWN:
                         if event.button == 1:
                             if resetButton.collidepoint(py.mouse.get_pos()):
                                 reset()
@@ -901,7 +935,13 @@ try:
                     menuText.draw("Main Menu")
 
                 for event in py.event.get():
-                    if event.type == py.KEYDOWN:
+                    if event.type == py.QUIT:
+                        py.display.quit()
+                        sys.exit()
+                        looping = False
+                        break
+
+                    elif event.type == py.KEYDOWN:
                         if event.key == py.K_ESCAPE:
                             if pause:
                                 pause = False
@@ -1008,7 +1048,8 @@ try:
                                 try:
                                     del characters[x.seq]
                                 except:
-                                    print(f"Character not deletet: {x.seq}")
+                                    logFile += f"Character not deletet: {x.seq}\n"
+
                         waveCooldownText = textWidget(titleFont, GREEN, (WINDOWWIDTH/2, 20), gamesurf)
                         waveCooldownText.draw(round(waveCooldown, 1))
                         waveCooldown -= time
@@ -1025,7 +1066,7 @@ try:
                                 try:
                                     del projectiles[x.pos]
                                 except:
-                                    print(f"Projectile not deletet: {x.pos}")
+                                    logFile += f"Projectile not deletet: {x.pos}\n"
 
                     for x in range(0, len(projectiles)):
                         projectiles[x].pos = x
@@ -1046,7 +1087,7 @@ try:
                                 try:
                                     del characters[x.seq]
                                 except:
-                                    print(f"Character not deletet: {x.seq}")
+                                    logFile += f"Character not deletet: {x.seq}\n"
 
                     for x in spawnPoints:
                         x.draw()
@@ -1067,7 +1108,7 @@ try:
                             try:
                                 del projectiles[x.pos]
                             except:
-                                print(f"Projectile not deletet: {x.pos}")
+                                logFile += f"Projectile not deletet: {x.pos}\n"
 
                     for x in projectiles:
                         x.draw()
@@ -1151,7 +1192,13 @@ try:
             quitText.draw("QUIT")
 
             for event in py.event.get():
-                if event.type == py.MOUSEBUTTONDOWN and event.button == 1:
+                if event.type == py.QUIT:
+                    py.display.quit()
+                    sys.exit()
+                    looping = False
+                    break
+
+                elif event.type == py.MOUSEBUTTONDOWN and event.button == 1:
                     if playRect.collidepoint(py.mouse.get_pos()):
                         playing = True
                         reset()
@@ -1170,7 +1217,7 @@ try:
 
                     elif quitButton.collidepoint(py.mouse.get_pos()):
                         py.display.quit()
-                        if_break = True
+                        looping = False
 
             if weaponIndex < 0:
                 weaponIndex = weaponNum-1
@@ -1193,7 +1240,7 @@ try:
             characters[char].weapon = weapons[weaponIndex]
             characters[char].armor = armors[armorIndex]
 
-        if not if_break:
+        if looping:
             py.display.update()
 
         if setFPS <= 0 or setFPS >= 120:
@@ -1201,7 +1248,16 @@ try:
         else:
             clock.tick(setFPS)
 
-except:
-    with open("crash_log.txt", "w") as f:
-        f.write(f"An Error hast occurred: {sys.exc_info()[0]}")
+except py.error:
+    pass
 
+except:
+    with open("crash_log.txt", "w+") as f:
+        f.write(f"An Error hast occurred: {traceback.format_exc()}")
+
+finally:
+    if logFile != "Start of log file\n":
+        logFile += "End of log file"
+
+        with open("log.txt", "w+") as f:
+            f.write(logFile)
