@@ -2,6 +2,7 @@
 
 import math
 import sys
+import time as ti
 import traceback
 import random as ra
 import pygame as py
@@ -845,7 +846,7 @@ def reset():
 if not py.get_init():
     py.init()
 
-gamesurf = py.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT))
+gamesurf = py.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT), py.RESIZABLE)
 
 py.display.set_caption(f"Cubes v.{version}")
 
@@ -864,6 +865,9 @@ weaponText = textWidget(buttonFont, weapons[0].color, ((WINDOWWIDTH/2)-70, (WIND
 reset()
 try:
     while looping:
+        WINDOWHEIGHT = gamesurf.get_height()
+        WINDOWWIDTH = gamesurf.get_width()
+
         gamesurf.fill(BLACK)
         time = (clock.get_time() / 1000)
         char = findPlayerChar()
@@ -898,10 +902,10 @@ try:
 
                 for event in py.event.get():
                     if event.type == py.QUIT:
-                        py.display.quit()
-                        sys.exit()
                         looping = False
-                        break
+
+                    elif event.type == py.VIDEORESIZE:
+                        gamesurf = py.display.set_mode((event.w, event.h), py.RESIZABLE)
 
                     elif event.type == py.MOUSEBUTTONDOWN:
                         if event.button == 1:
@@ -928,6 +932,9 @@ try:
                     py.draw.rect(gamesurf, GREY, (menuButtonPos[0], menuButtonPos[1], menuButtonSize[0], menuButtonSize[1]))
                     menuButton = py.Rect(menuButtonPos[0], menuButtonPos[1], menuButtonSize[0], menuButtonSize[1])
 
+                    pauseText = textWidget(titleFont, WHITE, (WINDOWWIDTH/2-100, WINDOWHEIGHT*0.2), gamesurf)
+                    pauseText.draw("Paused")
+
                     resetText = textWidget(buttonFont, BLACK, (resetButtonPos[0]+(resetButtonSize[0]*0.22), resetButtonPos[1]), gamesurf)
                     resetText.draw("Restart")
 
@@ -936,10 +943,11 @@ try:
 
                 for event in py.event.get():
                     if event.type == py.QUIT:
-                        py.display.quit()
-                        sys.exit()
                         looping = False
                         break
+
+                    elif event.type == py.VIDEORESIZE:
+                        gamesurf = py.display.set_mode((event.w, event.h), py.RESIZABLE)
 
                     elif event.type == py.KEYDOWN:
                         if event.key == py.K_ESCAPE:
@@ -1102,6 +1110,14 @@ try:
 
                     for x in characters:
                         x.draw()
+                        if x.pos[0] < 0:
+                            x.pos[0] = 0
+                        elif x.pos[0] > WINDOWWIDTH:
+                            x.pos[0] = WINDOWWIDTH
+                        if x.pos[1] < 0:
+                            x.pos[1] = 0
+                        elif x.pos[1] > WINDOWHEIGHT:
+                            x.pos[1] = WINDOWHEIGHT
 
                     for x in projectiles:
                         if x.range <= 0:
@@ -1193,10 +1209,10 @@ try:
 
             for event in py.event.get():
                 if event.type == py.QUIT:
-                    py.display.quit()
-                    sys.exit()
                     looping = False
-                    break
+
+                elif event.type == py.VIDEORESIZE:
+                    gamesurf = py.display.set_mode((event.w, event.h), py.RESIZABLE)
 
                 elif event.type == py.MOUSEBUTTONDOWN and event.button == 1:
                     if playRect.collidepoint(py.mouse.get_pos()):
@@ -1252,7 +1268,10 @@ except py.error:
     pass
 
 except:
-    with open("crash_log.txt", "w+") as f:
+    t = ti.localtime()
+    currentTime = ti.strftime("%H_%M_%S", t)
+
+    with open(f"crash_log_{currentTime}.txt", "w+") as f:
         f.write(f"An Error hast occurred: {traceback.format_exc()}")
 
 finally:
@@ -1261,3 +1280,5 @@ finally:
 
         with open("log.txt", "w+") as f:
             f.write(logFile)
+
+    py.quit()
