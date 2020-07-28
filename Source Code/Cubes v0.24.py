@@ -2,6 +2,8 @@
 
 import math
 import sys
+#import blob
+import logging
 import time as ti
 import traceback
 import random as ra
@@ -16,20 +18,27 @@ from item import itemNum, items, initItem
 from upgrade import upgradeNum, upgrades, initUpgrade
 
 # Define the window
-i = 0
 setFPS = 60
 QUALITY = (16, 9)
 WINDOWWIDTH = 2040
 WINDOWHEIGHT = int((WINDOWWIDTH/QUALITY[0])*QUALITY[1])
 
 version = "0.24"
-logFile = "Start of log file\n"
+
+# Sets the logging filter
+t = ti.localtime()
+currentTime = ti.strftime("%H_%M_%S", t)
+startTime = ti.time()
+logging.basicConfig(filename=f"log_{currentTime}.log", level=logging.DEBUG, format="%(levelname)s - %(message)s")
+
+logging.info(f"Starting, version: {version}")
 
 # Define Colors
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 LIGHTGREY = (169, 169, 169)
 GREY = (100, 100, 100)
+DARKGREY = (65, 65, 65)
 RED = (255, 0, 0)
 LIGHTRED = (230, 95, 57)
 BLUE = (0, 0, 255)
@@ -71,10 +80,7 @@ testIcon = {
 
 # Define Variables
 
-looping = True
-playing = False
-pause = False
-dead = False
+running = True
 
 movement = "none"
 
@@ -89,7 +95,7 @@ spawnPoints = []
 downTriangle = [py.Vector2(0, 0), py.Vector2(20, 0), py.Vector2(10, 10)]
 upTriangle = [py.Vector2(0, 10), py.Vector2(20, 10), py.Vector2(10, 0)]
 
-viewMode = 2
+hudMode = 2
 waveCooldown = 0
 oldLevel = 0
 maxChar = 0
@@ -253,21 +259,19 @@ class tower:
                 try:
                     del self.effect[i]
                 except:
-                    logFile += f"Effect not deletet: {i}\n"
+                    logging.warning(f"Effect not deletet: {i}n")
 
         self.target = py.mouse.get_pos()
-        manual = True
 
         if getNearestEnemieChar(self) is not None:
             self.target = getNearestEnemieChar(self).pos
-            manual = False
 
         if not checkList(self.effect, "shocked"):
             self.dir = py.Vector2(self.target[0]-self.pos[0], self.target[1]-self.pos[1])
             self.dir.scale_to_length(int(self.radius*(self.factor+0.2)))
 
         if self.cooldown <= 0:
-            if calcDist(self.pos, self.target) <= self.weapon.range or manual:
+            if calcDist(self.pos, self.target) <= self.weapon.range:
                 self.shoot(self.target)
 
         if self.cooldown > 0:
@@ -379,7 +383,8 @@ class character:
                 try:
                     del self.effect[i]
                 except:
-                    logFile += f"Effect not deletet: {i}\n"
+                    logging.warning("Effect not deletet: {i}")
+
         if self.controlled:
             self.target = py.mouse.get_pos()
         else:
@@ -652,7 +657,7 @@ def checkHits(projectiles, objects):
                     try:
                         del projectiles[x.pos]
                     except:
-                        logFile += f"Projectile not deletet: {x.pos}\n"
+                        logging.warning(f"Projectile not deletet: {x.pos}")
 
 def offsetTrajectory(start, splatter):
     start[0] = int(start[0])
@@ -757,12 +762,13 @@ def getNearestEnemieChar(start):
                 distance.append((calcDist(start.pos, x.pos), x.seq))
 
         for y in distance:
-            if minDist[0] == 0:
+            if minDist[0] <= 0:
                 minDist = y
 
             elif minDist[0] > y[0]:
                 minDist = y
 
+        logging.debug(minDist)
         return characters[minDist[1]]
 
 def mindTransport(start, target):
@@ -843,351 +849,216 @@ def reset():
 
 # Initialsation
 
+# Init pygame
 if not py.get_init():
     py.init()
 
+# Sets the display
 gamesurf = py.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT), py.RESIZABLE)
-
 py.display.set_caption(f"Cubes v.{version}")
 
+# Sets screen mode
+screen = "main_menu"
+
+# Creates the main clock
 clock = py.time.Clock()
 
+
+
+# Init all needed modules
 initArmor()
 initWeapon()
 initItem()
 initUpgrade()
 
+# Load up spirits
+#imageNames = blog.blob("images\\*.png")
+imageNames = ()
+images =  {}
+
+for x in imageNames:
+    images[x] = py.image.load(f"images\\{x}")
+
+# Define widgets size & position
+resetButtonSize = (150, 40)
+resetButtonPos = ((WINDOWWIDTH//2)-(resetButtonSize[0]//2), (WINDOWHEIGHT//2)-(resetButtonSize[1]//2))
+
+menuButtonSize = (150, 40)
+menuButtonPos = ((WINDOWWIDTH//2)-(menuButtonSize[0]//2), (WINDOWHEIGHT//2)-menuButtonSize[1]//2+50)
+
+upPos1 = ((WINDOWWIDTH/2)-100, (WINDOWHEIGHT/4)+130)
+downPos1 = ((WINDOWWIDTH/2)-100, (WINDOWHEIGHT/4)+80)
+upPos2 = ((WINDOWWIDTH/2)-100, (WINDOWHEIGHT/4)+50)
+downPos2 = ((WINDOWWIDTH/2)-100, (WINDOWHEIGHT/4))
+
+# Define widgets
 armorText = textWidget(buttonFont, armors[0].color, ((WINDOWWIDTH/2)-70, (WINDOWHEIGHT/4)+15), gamesurf)
 weaponText = textWidget(buttonFont, weapons[0].color, ((WINDOWWIDTH/2)-70, (WINDOWHEIGHT/4)+90), gamesurf)
+quitText = textWidget(buttonFont, BLACK, ((WINDOWWIDTH/2)-35, (WINDOWHEIGHT/3)+100), gamesurf)
+titletext = textWidget(title2Font, (220, 220, 220), (WINDOWWIDTH/2-90, 150), gamesurf)
+deadText = textWidget(titleFont, RED, (WINDOWWIDTH/2-100, WINDOWHEIGHT*0.2), gamesurf)
+playText = textWidget(buttonFont, BLACK, ((WINDOWWIDTH/2)-30, (WINDOWHEIGHT/3)+50), gamesurf)
+menuText = textWidget(buttonFont, BLACK, (menuButtonPos[0]+(menuButtonSize[0]*0.1), menuButtonPos[1]), gamesurf)
+resetText = textWidget(buttonFont, BLACK, (resetButtonPos[0]+(resetButtonSize[0]*0.22), resetButtonPos[1]), gamesurf)
+pauseText = textWidget(titleFont, WHITE, (WINDOWWIDTH/2-100, WINDOWHEIGHT*0.2), gamesurf)
+fpsText = textWidget(buttonFont, GREEN, ((WINDOWWIDTH/2), 20), gamesurf)
+xpText = textWidget(buttonFont, GREEN, (20, 80), gamesurf)
+levelText = textWidget(buttonFont, GREEN, (20, 50), gamesurf)
+healthText = textWidget(buttonFont, LIGHTRED, (20, 20), gamesurf)
+resourcesText = textWidget(buttonFont, GREEN, ((WINDOWWIDTH-200), 20), gamesurf)
+waveCooldownText = textWidget(titleFont, GREEN, (WINDOWWIDTH/2, 20), gamesurf)
+
+effectIconText = iconAndText(testIcon, testIcon, testIcon, testIcon, 5, effectFont, ERROCOLOR, BLACK, (1, 1), "None", (40, WINDOWHEIGHT-80), gamesurf)
+equippedItemIconText = iconAndText(testIcon, testIcon, testIcon, testIcon, 2, itemFont, GREEN, LIGHTGREY, (80, 20), "None", (WINDOWWIDTH-180, 80), gamesurf)
 
 # Main Loop
 
+# Resets all variables
 reset()
+
+logging.info(f"Loaded after: {round(ti.time()-startTime, 3)}s")
+
 try:
-    while looping:
+    while running:
+        # Gets window size
         WINDOWHEIGHT = gamesurf.get_height()
         WINDOWWIDTH = gamesurf.get_width()
 
+        # Resets backround
         gamesurf.fill(BLACK)
+        # Sets global time variable
         time = (clock.get_time() / 1000)
+        # Sets log time
+        t = ti.localtime()
+        currentTime = ti.strftime("%H_%M_%S", t)
+        # Gets player charakter
         char = findPlayerChar()
 
+        # Defines the maximum amount of enemies
         if characters[char].level <= 10:
             maxChar = characters[char].level
         else:
             maxChar = 10
 
-        if playing:
-            if dead:
-                resetButtonSize = (150, 40)
-                resetButtonPos = ((WINDOWWIDTH//2)-(resetButtonSize[0]//2), (WINDOWHEIGHT//2)-(resetButtonSize[1]//2))
+        # Main event loop
+        for event in py.event.get():
+            # Resize the main window
+            if event.type == py.VIDEORESIZE:
+                gamesurf = py.display.set_mode((event.w, event.h), py.RESIZABLE)
 
-                menuButtonSize = (150, 40)
-                menuButtonPos = ((WINDOWWIDTH//2)-(menuButtonSize[0]//2), (WINDOWHEIGHT//2)-menuButtonSize[1]//2+50)
+            # Breaks loop when window closes
+            if event.type == py.QUIT:
+                running = False
 
-                py.draw.rect(gamesurf, GREY, (resetButtonPos[0], resetButtonPos[1], resetButtonSize[0], resetButtonSize[1]))
-                resetButton = py.Rect(resetButtonPos[0], resetButtonPos[1], resetButtonSize[0], resetButtonSize[1])
+            if screen == "main_menu":
                 
-                py.draw.rect(gamesurf, GREY, (menuButtonPos[0], menuButtonPos[1], menuButtonSize[0], menuButtonSize[1]))
-                menuButton = py.Rect(menuButtonPos[0], menuButtonPos[1], menuButtonSize[0], menuButtonSize[1])
-
-                deadText = textWidget(titleFont, RED, (WINDOWWIDTH/2-100, WINDOWHEIGHT*0.2), gamesurf)
-                deadText.draw("You are Dead")
-
-                resetText = textWidget(buttonFont, BLACK, (resetButtonPos[0]+(resetButtonSize[0]*0.22), resetButtonPos[1]), gamesurf)
-                resetText.draw("Restart")
-
-                menuText = textWidget(buttonFont, BLACK, (menuButtonPos[0]+(menuButtonSize[0]*0.1), menuButtonPos[1]), gamesurf)
-                menuText.draw("Main Menu")
-
-                for event in py.event.get():
-                    if event.type == py.QUIT:
-                        looping = False
-
-                    elif event.type == py.VIDEORESIZE:
-                        gamesurf = py.display.set_mode((event.w, event.h), py.RESIZABLE)
-
-                    elif event.type == py.MOUSEBUTTONDOWN:
-                        if event.button == 1:
-                            if resetButton.collidepoint(py.mouse.get_pos()):
-                                reset()
-                                dead = False
-
-                            elif menuButton.collidepoint(py.mouse.get_pos()):
-                                playing = False
-                                dead = False
-                                break
-
-            else:
-                if pause:
-                    resetButtonSize = (150, 40)
-                    resetButtonPos = ((WINDOWWIDTH//2)-(resetButtonSize[0]//2), (WINDOWHEIGHT//2)-(resetButtonSize[1]//2))
-
-                    menuButtonSize = (150, 40)
-                    menuButtonPos = ((WINDOWWIDTH//2)-(menuButtonSize[0]//2), (WINDOWHEIGHT//2)-menuButtonSize[1]//2+50)
-
-                    py.draw.rect(gamesurf, GREY, (resetButtonPos[0], resetButtonPos[1], resetButtonSize[0], resetButtonSize[1]))
-                    resetButton = py.Rect(resetButtonPos[0], resetButtonPos[1], resetButtonSize[0], resetButtonSize[1])
-
-                    py.draw.rect(gamesurf, GREY, (menuButtonPos[0], menuButtonPos[1], menuButtonSize[0], menuButtonSize[1]))
-                    menuButton = py.Rect(menuButtonPos[0], menuButtonPos[1], menuButtonSize[0], menuButtonSize[1])
-
-                    pauseText = textWidget(titleFont, WHITE, (WINDOWWIDTH/2-100, WINDOWHEIGHT*0.2), gamesurf)
-                    pauseText.draw("Paused")
-
-                    resetText = textWidget(buttonFont, BLACK, (resetButtonPos[0]+(resetButtonSize[0]*0.22), resetButtonPos[1]), gamesurf)
-                    resetText.draw("Restart")
-
-                    menuText = textWidget(buttonFont, BLACK, (menuButtonPos[0]+(menuButtonSize[0]*0.1), menuButtonPos[1]), gamesurf)
-                    menuText.draw("Main Menu")
-
-                for event in py.event.get():
-                    if event.type == py.QUIT:
-                        looping = False
-                        break
-
-                    elif event.type == py.VIDEORESIZE:
-                        gamesurf = py.display.set_mode((event.w, event.h), py.RESIZABLE)
-
-                    elif event.type == py.KEYDOWN:
-                        if event.key == py.K_ESCAPE:
-                            if pause:
-                                pause = False
-                            else:
-                                pause = True
-
-                        elif event.key == py.K_SPACE and not pause:
-                            if mindTransport(characters[char], getNearestChar(characters[char])) is not None:
-                                mindTransport(characters[char], getNearestChar(characters[char]))
-
-                        elif event.key == py.K_t and waveCooldown != 0:
-                            waveCooldown = 0
-                            oldLevel = characters[char].level
-
-                        elif event.key == py.K_f and characters[char].resources >= characters[char].towerCost and not pause:
-                            appendTower(characters[char].pos, characters[char].team, characters[char].towerWeapon, characters[char].level, characters[char].towerAccuracy)
-
-                        elif event.key == py.K_e and characters[char].resources >= items[findObjectInList(items, "medKit")].cost and not pause:
-                            characters[char].health += (items[findObjectInList(items, "medKit")].healing/100)*characters[char].maxHealth
-
-                            if characters[char].health > characters[char].maxHealth:
-                                characters[char].health = characters[char].maxHealth
-
-                        elif event.key == py.K_TAB:
-                            viewMode += 1
-
-                            if viewMode < 0:
-                                viewMode = 4
-
-                            elif viewMode > 4:
-                                viewMode = 0
-
-                    elif event.type == py.MOUSEBUTTONDOWN:
-                        if pause:
-                            if event.button == 1:
-                                if resetButton.collidepoint(py.mouse.get_pos()):
-                                    reset()
-                                    pause = False
-
-                                elif menuButton.collidepoint(py.mouse.get_pos()):
-                                    playing = False
-                                    pause = False
-
-                        else:
-                            if event.button == 3 and characters[char].charge >= 100:
-                                characters[char].pos[0] = py.mouse.get_pos()[0]
-                                characters[char].pos[1] = py.mouse.get_pos()[1]
-                                characters[char].effect.append(effect("shocked", 1.5, 0, (64, 56, 201)))
-                                characters[char].effectDuration = 2.5
-
-                if not pause:
-                    mouse = py.mouse.get_pressed()
-
-                    if mouse[0] == 1 and not checkList(characters[char].effect, "shocked") and characters[char].cooldown <= 0:
-                        characters[char].shoot()
-
-                    keys = py.key.get_pressed()
-
-                    if not checkList(characters[char].effect, "shocked"):
-                        if keys[py.K_w]:
-                            if keys[py.K_LSHIFT] and characters[char].boost > 0:
-                                characters[char].pos[1] -= characters[char].movementSpeed * 2 * time
-                                characters[char].boost -= 10
-
-                            else:
-                                characters[char].pos[1] -= characters[char].movementSpeed * time
-                                characters[char].boost += 10
-
-                        if keys[py.K_s]:
-                            if keys[py.K_LSHIFT] and characters[char].boost > 0:
-                                characters[char].pos[1] += characters[char].movementSpeed * 2 * time
-                                characters[char].boost -= 10
-
-                            else:
-                                characters[char].pos[1] += characters[char].movementSpeed * time
-                                characters[char].boost += 10
-
-                        if keys[py.K_d]:
-                            if keys[py.K_LSHIFT] and characters[char].boost > 0:
-                                characters[char].pos[0] += characters[char].movementSpeed * 2 * time
-                                characters[char].boost -= 10
-
-                            else:
-                                characters[char].pos[char] += characters[char].movementSpeed * time
-                                characters[char].boost += 10
-
-                        if keys[py.K_a]:
-                            if keys[py.K_LSHIFT] and characters[char].boost > 0:
-                                characters[char].pos[0] -= characters[char].movementSpeed * 2 * time
-                                characters[char].boost -= 10
-
-                            else:
-                                characters[char].pos[0] -= characters[char].movementSpeed * time
-                                characters[char].boost += 10
-
-                    if oldLevel != characters[char].level:
-                        if (characters[char].level % 10) == 0 and waveCooldown <= 0:
-                            waveCooldown = 30
-                            oldLevel = characters[char].level
-
-                    if waveCooldown > 0:
-                        for x in characters:
-                            if x.team != 0:
-                                try:
-                                    del characters[x.seq]
-                                except:
-                                    logFile += f"Character not deletet: {x.seq}\n"
-
-                        waveCooldownText = textWidget(titleFont, GREEN, (WINDOWWIDTH/2, 20), gamesurf)
-                        waveCooldownText.draw(round(waveCooldown, 1))
-                        waveCooldown -= time
-
-                    #for x in characters:
-                    #    for y in barriers:
-                    #        checkCollision(x, y)
-
-                    checkHits(projectiles, characters)
-
-                    for x in projectiles:
-                        for y in barriers:
-                            if checkRectangle(y, x):
-                                try:
-                                    del projectiles[x.pos]
-                                except:
-                                    logFile += f"Projectile not deletet: {x.pos}\n"
-
-                    for x in range(0, len(projectiles)):
-                        projectiles[x].pos = x
-
-                    for x in range(0, len(towers)):
-                        towers[x].seq = x
-
-                    for x in range(0, len(characters)):
-                        characters[x].seq = x
-
-                    for x in characters:
-                        if x.health <= 0:
-                            if x.team == 0:
-                                die()
-                                break
-
-                            else:
-                                try:
-                                    del characters[x.seq]
-                                except:
-                                    logFile += f"Character not deletet: {x.seq}\n"
-
-                    for x in spawnPoints:
-                        x.draw()
-                        if waveCooldown <= 0:
-                            x.spawn()
-
-                    for x in barriers:
-                        x.draw()
-
-                    for x in towers:
-                        x.draw()
-
-                    for x in characters:
-                        x.draw()
-                        if x.pos[0] < 0:
-                            x.pos[0] = 0
-                        elif x.pos[0] > WINDOWWIDTH:
-                            x.pos[0] = WINDOWWIDTH
-                        if x.pos[1] < 0:
-                            x.pos[1] = 0
-                        elif x.pos[1] > WINDOWHEIGHT:
-                            x.pos[1] = WINDOWHEIGHT
-
-                    for x in projectiles:
-                        if x.range <= 0:
-                            try:
-                                del projectiles[x.pos]
-                            except:
-                                logFile += f"Projectile not deletet: {x.pos}\n"
-
-                    for x in projectiles:
-                        x.draw()
-
-                    if viewMode > 0:
-                        for x in towers:
-                            x.healthBar()
-
-                        for x in characters:
-                            x.healthBar()
-
-                    if viewMode > 0:
-                        healthText = textWidget(buttonFont, LIGHTRED, (20, 20), gamesurf)
-                        healthText.draw(f"{round(characters[char].health, 1)}/{round(characters[char].maxHealth, 1)}")
-
-                    if viewMode > 1:
-                        levelText = textWidget(buttonFont, GREEN, (20, 50), gamesurf)
-                        levelText.draw(f"Level: {characters[char].level}")
-
-                        resourcesText = textWidget(buttonFont, GREEN, ((WINDOWWIDTH-200), 20), gamesurf)
-                        resourcesText.draw(f"Resources: {round(characters[char].resources, 1)}")
-
-                        equippedItemIconText = iconAndText(testIcon, testIcon, testIcon, testIcon, 2, itemFont, GREEN, LIGHTGREY, (80, 20), f"{items[0].displayName}: {characters[char].inventory.get(items[0].name).amount}", (WINDOWWIDTH-180, 80), gamesurf)
-                        equippedItemIconText.draw(equippedItemIconText.pos)
-
-                        #reloadSlider = sliderWidget(LIGHTGREY, GREY, (180, 20), (50, 20), gamesurf)
-                        #reloadSlider.draw(characters[char].maxCooldown, characters[char].cooldown, reloadSlider.pos1)
-
-                        for x in characters[char].effect:
-                            effectIcon = icon(testIcon, testIcon, testIcon, testIcon, (40, WINDOWHEIGHT-80), gamesurf)
-                            effectIcon.draw(effectIcon.pos)
-
-                    if viewMode > 2:
-                        xpText = textWidget(buttonFont, GREEN, (20, 80), gamesurf)
-                        xpText.draw(f"XP: {int(characters[char].xp)}/{characters[char].level*100}")
-
-                        #inventoryText = iconAndText(testIcon, testIcon, testIcon, testIcon, 2, buttonFont, GREEN, LIGHTGREY, (60, 20), items[0].displayName, (WINDOWWIDTH-220, 60), gamesurf)
-                        #inventoryText.draw(inventoryText.pos)
-
-                        for x in characters[char].effect:
-                            displayName = f"{x.type[:1].upper()}{x.type[1:]}"
-                            effectIconText = iconAndText(testIcon, testIcon, testIcon, testIcon, 5, effectFont, x.color, BLACK, (0, 0), displayName, (40, WINDOWHEIGHT-80), gamesurf)
-                            effectIconText.draw(effectIcon.pos)
-
-                    if viewMode > 3:
-                        fpsText = textWidget(buttonFont, GREEN, ((WINDOWWIDTH/2), 20), gamesurf)
-                        fpsText.draw(f"FPS: {int(clock.get_fps())}")
-
-        else:
-
-            titletext = textWidget(title2Font, (220, 220, 220), (WINDOWWIDTH/2-90, 150), gamesurf)
+                # Check for left clicks
+                if event.type == py.MOUSEBUTTONDOWN and event.button == 1:
+                    # Start
+                    if playRect.collidepoint(py.mouse.get_pos()):
+                        screen = "game_running"
+                        reset()
+
+                    # Next weapon
+                    elif upWeaponButtonRect.collidepoint(py.mouse.get_pos()):
+                        weaponIndex += 1
+
+                    # Last weapon
+                    elif downWeaponButtonRect.collidepoint(py.mouse.get_pos()):
+                        weaponIndex -= 1
+
+                    # Next armor
+                    elif upArmorButtonRect.collidepoint(py.mouse.get_pos()):
+                        armorIndex += 1
+
+                    # Last armor
+                    elif downArmorButtonRect.collidepoint(py.mouse.get_pos()):
+                        armorIndex -= 1
+
+                    # Quit game
+                    elif quitButton.collidepoint(py.mouse.get_pos()):
+                        py.display.quit()
+                        break                
+
+            elif screen == "options":
+                pass
+            
+            elif screen == "game_running":
+
+                # Changing pause status
+                if event.type == py.KEYDOWN:
+                    if event.key == py.K_ESCAPE:
+                        screen = "game_paused"
+
+                    # Transport mind to nearest enemie
+                    elif event.key == py.K_SPACE:
+                        if mindTransport(characters[char], getNearestChar(characters[char])) is not None:
+                            mindTransport(characters[char], getNearestChar(characters[char]))
+
+                    # Skip wave cooldwon
+                    elif event.key == py.K_t and waveCooldown != 0:
+                        waveCooldown = 0
+                        oldLevel = characters[char].level
+
+                    # Placing Tower
+                    elif event.key == py.K_f and characters[char].resources >= characters[char].towerCost:
+                        appendTower(characters[char].pos, characters[char].team, characters[char].towerWeapon, characters[char].level, characters[char].towerAccuracy)
+
+                    # TEMP Using equiped item
+                    elif event.key == py.K_e and characters[char].resources >= items[findObjectInList(items, "medKit")].cost:
+                        characters[char].health += (items[findObjectInList(items, "medKit")].healing/100)*characters[char].maxHealth
+
+                        if characters[char].health > characters[char].maxHealth:
+                            characters[char].health = characters[char].maxHealth
+
+                    # Change hud mode
+                    elif event.key == py.K_F1:
+                        hudMode += 1
+
+                        if hudMode < 0:
+                            hudMode = 4
+
+                        elif hudMode > 4:
+                            hudMode = 0
+                        
+                elif event.type == py.MOUSEBUTTONDOWN:
+                    # Teleport to mouse position and sets effect
+                    if event.button == 3 and characters[char].charge >= 100:
+                        characters[char].pos[0] = py.mouse.get_pos()[0]
+                        characters[char].pos[1] = py.mouse.get_pos()[1]
+
+                        characters[char].effect.append(effect("shocked", 1.5, 0, (64, 56, 201)))
+                        characters[char].effectDuration = 2.5
+
+            elif screen == "game_paused" or screen == "death_screen":
+
+                # Check for button clicks
+                if event.type == py.KEYDOWN:
+                    if event.key == py.K_ESCAPE and screen == "game_paused":
+                        screen = "game_running"
+
+                elif event.type == py.MOUSEBUTTONDOWN:
+                    if event.button == 1:
+                        if resetButton.collidepoint(py.mouse.get_pos()):
+                            reset()
+                            screen = "game_running"
+
+                        elif menuButton.collidepoint(py.mouse.get_pos()):
+                            screen = "main_menu"
+
+            elif screen == "game_inventory":
+                pass
+
+
+        if screen == "main_menu":
+                
+            # Draw text & icons
             titletext.draw("Cubes")
 
             py.draw.rect(gamesurf, GREY, ((WINDOWWIDTH/2)-90, (WINDOWHEIGHT/3)+50, 180, 40))
             playRect = py.Rect((WINDOWWIDTH/2)-90, (WINDOWHEIGHT/3)+50, 180, 40)
 
-            playText = textWidget(buttonFont, BLACK, ((WINDOWWIDTH/2)-30, (WINDOWHEIGHT/3)+50), gamesurf)
             playText.draw("PLAY")
-
-            upPos1 = ((WINDOWWIDTH/2)-100, (WINDOWHEIGHT/4)+130)
-            downPos1 = ((WINDOWWIDTH/2)-100, (WINDOWHEIGHT/4)+80)
-            upPos2 = ((WINDOWWIDTH/2)-100, (WINDOWHEIGHT/4)+50)
-            downPos2 = ((WINDOWWIDTH/2)-100, (WINDOWHEIGHT/4))
 
             py.draw.polygon(gamesurf, BLUE, (downTriangle[0]+upPos1, downTriangle[1]+upPos1, downTriangle[2]+upPos1))
             upWeaponButtonRect = py.Rect(upPos1[0], upPos1[1], 20, 20)
@@ -1204,37 +1075,9 @@ try:
             py.draw.rect(gamesurf, RED, ((WINDOWWIDTH/2)-40, (WINDOWHEIGHT/3)+100, 80, 40))
             quitButton = py.Rect((WINDOWWIDTH/2)-40, (WINDOWHEIGHT/3)+100, 80, 40)
 
-            quitText = textWidget(buttonFont, BLACK, ((WINDOWWIDTH/2)-35, (WINDOWHEIGHT/3)+100), gamesurf)
             quitText.draw("QUIT")
 
-            for event in py.event.get():
-                if event.type == py.QUIT:
-                    looping = False
-
-                elif event.type == py.VIDEORESIZE:
-                    gamesurf = py.display.set_mode((event.w, event.h), py.RESIZABLE)
-
-                elif event.type == py.MOUSEBUTTONDOWN and event.button == 1:
-                    if playRect.collidepoint(py.mouse.get_pos()):
-                        playing = True
-                        reset()
-
-                    elif upWeaponButtonRect.collidepoint(py.mouse.get_pos()):
-                        weaponIndex += 1
-
-                    elif downWeaponButtonRect.collidepoint(py.mouse.get_pos()):
-                        weaponIndex -= 1
-
-                    elif upArmorButtonRect.collidepoint(py.mouse.get_pos()):
-                        armorIndex += 1
-
-                    elif downArmorButtonRect.collidepoint(py.mouse.get_pos()):
-                        armorIndex -= 1
-
-                    elif quitButton.collidepoint(py.mouse.get_pos()):
-                        py.display.quit()
-                        looping = False
-
+            # Handeling weapon & armor selection
             if weaponIndex < 0:
                 weaponIndex = weaponNum-1
 
@@ -1247,6 +1090,7 @@ try:
             elif armorIndex > (armorNum-1):
                 armorIndex = 0
 
+            # Draw weapon & armor selection
             weaponText.color = weapons[weaponIndex].color
             armorText.color = armors[armorIndex].color
 
@@ -1254,31 +1098,228 @@ try:
             armorText.draw(armors[armorIndex].displayName)
 
             characters[char].weapon = weapons[weaponIndex]
-            characters[char].armor = armors[armorIndex]
+            characters[char].armor = armors[armorIndex]                   
 
-        if looping:
-            py.display.update()
+        elif screen == "options":
+            pass
+            
+        elif screen == "game_running":
 
+            # Getting pressed mouse buttons
+            mouse = py.mouse.get_pressed()
+
+            # Handel player shooting
+            if mouse[0] == 1 and not checkList(characters[char].effect, "shocked") and characters[char].cooldown <= 0:
+                characters[char].shoot()
+
+            # Getting pressed keys
+            keys = py.key.get_pressed()
+
+            # Handeling player movment
+            if not checkList(characters[char].effect, "shocked"):
+                if keys[py.K_w]:
+                    if keys[py.K_LSHIFT] and characters[char].boost > 0:
+                        characters[char].pos[1] -= characters[char].movementSpeed * 2 * time
+                        characters[char].boost -= 10
+
+                    else:
+                        characters[char].pos[1] -= characters[char].movementSpeed * time
+                        characters[char].boost += 10
+
+                if keys[py.K_s]:
+                    if keys[py.K_LSHIFT] and characters[char].boost > 0:
+                        characters[char].pos[1] += characters[char].movementSpeed * 2 * time
+                        characters[char].boost -= 10
+
+                    else:
+                        characters[char].pos[1] += characters[char].movementSpeed * time
+                        characters[char].boost += 10
+
+                if keys[py.K_d]:
+                    if keys[py.K_LSHIFT] and characters[char].boost > 0:
+                        characters[char].pos[0] += characters[char].movementSpeed * 2 * time
+                        characters[char].boost -= 10
+
+                    else:
+                        characters[char].pos[char] += characters[char].movementSpeed * time
+                        characters[char].boost += 10
+
+                if keys[py.K_a]:
+                    if keys[py.K_LSHIFT] and characters[char].boost > 0:
+                        characters[char].pos[0] -= characters[char].movementSpeed * 2 * time
+                        characters[char].boost -= 10
+
+                    else:
+                        characters[char].pos[0] -= characters[char].movementSpeed * time
+                        characters[char].boost += 10
+
+            # Handels wave cooldown
+            if oldLevel != characters[char].level:
+                if (characters[char].level % 10) == 0 and waveCooldown <= 0:
+                    waveCooldown = 30
+                    oldLevel = characters[char].level
+
+            # Delete all enemie characters
+            if waveCooldown > 0:
+                for x in characters:
+                    if x.team != 0:
+                        try:
+                            del characters[x.seq]
+                        except:
+                            logging.warning(f"Character not deletet: {x.seq}")
+
+                # Print remaining time
+                waveCooldownText.draw(round(waveCooldown, 1))
+                waveCooldown -= time
+
+            # cheking for hits
+            #for x in characters:
+            #    for y in barriers:
+            #        checkCollision(x, y)
+
+            checkHits(projectiles, characters)
+
+            for x in projectiles:
+                for y in barriers:
+                    if checkRectangle(y, x):
+                        try:
+                            del projectiles[x.pos]
+                        except:
+                            logging.warning(f"Projectile not deletet: {x.pos}")
+
+            # Resorts list indexes
+            for x in range(0, len(projectiles)):
+                projectiles[x].pos = x
+
+            for x in range(0, len(towers)):
+                towers[x].seq = x
+
+            for x in range(0, len(characters)):
+                characters[x].seq = x
+
+            # Check for dead characters and delets them
+            for x in characters:
+                if x.health <= 0:
+                    if x.team == 0:
+                        die()
+
+                    else:
+                        try:
+                            del characters[x.seq]
+                        except:
+                            logging.warning(f"Character not deletet: {x.seq}")
+
+            # Draws all objects and handels object specific funktions
+            for x in spawnPoints:
+                x.draw()
+                if waveCooldown <= 0:
+                    x.spawn()
+
+            for x in barriers:
+                x.draw()
+
+            for x in towers:
+                x.draw()
+
+            for x in characters:
+                x.draw()
+                if x.pos[0] < 0:
+                    x.pos[0] = 0
+                elif x.pos[0] > WINDOWWIDTH:
+                    x.pos[0] = WINDOWWIDTH
+                if x.pos[1] < 0:
+                    x.pos[1] = 0
+                elif x.pos[1] > WINDOWHEIGHT:
+                    x.pos[1] = WINDOWHEIGHT
+
+            for x in projectiles:
+                x.draw()
+
+            # Check for outranged projectiles
+            for x in projectiles:
+                if x.range <= 0:
+                    try:
+                        del projectiles[x.pos]
+                    except:
+                        logging.warning(f"Projectile not deletet: {x.pos}")
+
+            # Check and display health bars
+            if hudMode > 0:
+                for x in towers:
+                    x.healthBar()
+
+                for x in characters:
+                    x.healthBar()
+
+            # Check and display the hud
+            if hudMode > 0:
+                for x in towers:
+                    x.healthBar()
+
+                for x in characters:
+                    x.healthBar()
+
+            # Health text and bar
+            if hudMode > 0:
+                healthText.draw(f"{round(characters[char].health, 1)}/{round(characters[char].maxHealth, 1)}")
+
+            # Last mode & level, resources & curent item
+            if hudMode > 1:
+                levelText.draw(f"Level: {characters[char].level}")
+
+                resourcesText.draw(f"Resources: {round(characters[char].resources, 1)}")
+                    
+                #equippedItemIconText.draw(f"{items[0].displayName}: {characters[char].inventory.get(items[0].name).amount}") # ERROR
+
+                #reloadSlider = sliderWidget(LIGHTGREY, GREY, (180, 20), (50, 20), gamesurf)
+                #reloadSlider.draw(characters[char].maxCooldown, characters[char].cooldown, reloadSlider.pos1)
+
+                for x in characters[char].effect:
+                    effectIconText.icon = images.get(effect.type)
+                    effectIconText.draw(effectIconText.pos)
+
+            # Debug infos
+            if hudMode > 2:
+                fpsText.draw(f"FPS: {int(clock.get_fps())}")
+
+        elif screen == "game_paused" or screen == "death_screen":
+            py.draw.rect(gamesurf, GREY, (resetButtonPos[0], resetButtonPos[1], resetButtonSize[0], resetButtonSize[1]))
+            resetButton = py.Rect(resetButtonPos[0], resetButtonPos[1], resetButtonSize[0], resetButtonSize[1])
+
+            py.draw.rect(gamesurf, GREY, (menuButtonPos[0], menuButtonPos[1], menuButtonSize[0], menuButtonSize[1]))
+            menuButton = py.Rect(menuButtonPos[0], menuButtonPos[1], menuButtonSize[0], menuButtonSize[1])
+
+            # Print current title
+            if screen == "game_paused":
+                pauseText.draw("Paused")
+            else:
+                deadText.draw("You are Dead")
+
+            resetText.draw("Restart")
+
+            menuText.draw("Main Menu")
+
+        elif screen == "game_inventory":
+            pass
+
+        # Updating the display
+        py.display.update()
+
+        # Tick the main clock with given fps
         if setFPS <= 0 or setFPS >= 120:
             clock.tick(120)
         else:
             clock.tick(setFPS)
 
-except py.error:
-    pass
-
+# Catch any error an add it to the crash log
 except:
-    t = ti.localtime()
-    currentTime = ti.strftime("%H_%M_%S", t)
+    logging.critical(traceback.format_exc())
 
     with open(f"crash_log_{currentTime}.txt", "w+") as f:
         f.write(f"An Error hast occurred: {traceback.format_exc()}")
 
+# Doing final cleanup
 finally:
-    if logFile != "Start of log file\n":
-        logFile += "End of log file"
 
-        with open("log.txt", "w+") as f:
-            f.write(logFile)
-
+    # Stops all pygame modules and closes all windows
     py.quit()

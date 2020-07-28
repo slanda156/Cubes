@@ -1,4 +1,4 @@
-<h1>Cubes</h1>
+<h1>Cubes v0.24</h1>
 
 <h2>Installation</h2>
 <ol>
@@ -26,7 +26,7 @@
     </tr>
     <tr>
         <td>TAB:</td>
-        <td>Switch hud modes</td>
+        <td>WIP</td>
     </tr>
     <tr>
         <td>Spacebar:</td>
@@ -40,13 +40,16 @@
         <td>RMB:</td>
         <td>Teleport</td>
     </tr>
+    <tr>
+        <td>F1:</td>
+        <td>Switch hud modes</td>
+    </tr>
 </table>
 <h3>Hudmodes:</h3>
 <ol>
 <li>Nothing</li>
 <li>Healthbar</li>
-<li>2. & Level, reload, resources, status icons, equiped item</li>
-<li>3. & XP, status text, inventory</li>
+<li>2. & Level, reload, resources, status icons & text, equiped item</li>
 <li>4. & Performance</li>
 </ol>
 
