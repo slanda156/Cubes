@@ -1,3 +1,4 @@
+import logging
 from damageTypes import damageTypes
 
 weaponNum = 6
@@ -5,6 +6,7 @@ weaponNum = 6
 weapons = []
 
 def initWeapon():
+    logging.info("Loading weapons")
     for i in range(weaponNum):
         weapons.append(weapon(i))
 

@@ -2,7 +2,7 @@
 
 import math
 import sys
-#import blob
+import glob
 import logging
 import time as ti
 import traceback
@@ -29,7 +29,8 @@ version = "0.24"
 t = ti.localtime()
 currentTime = ti.strftime("%H_%M_%S", t)
 startTime = ti.time()
-logging.basicConfig(filename=f"log_{currentTime}.log", level=logging.DEBUG, format="%(levelname)s - %(message)s")
+formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s", "%Y-%m-%d %H:%M:%S")
+logging.basicConfig(filename=f"log_{currentTime}.log", level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
 
 logging.info(f"Starting, version: {version}")
 
@@ -67,17 +68,6 @@ boss = {
     0, 0, 0, 0, 0, 0, 0, 0
 }
 
-testIcon = {
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0
-}
-
 # Define Variables
 
 running = True
@@ -95,7 +85,7 @@ spawnPoints = []
 downTriangle = [py.Vector2(0, 0), py.Vector2(20, 0), py.Vector2(10, 10)]
 upTriangle = [py.Vector2(0, 10), py.Vector2(20, 10), py.Vector2(10, 0)]
 
-hudMode = 2
+hudMode = 0
 waveCooldown = 0
 oldLevel = 0
 maxChar = 0
@@ -167,6 +157,10 @@ class spawnPoint:
                     weaponIn = 0
                 armorIn = ra.randrange(0, armorNum)
 
+                # Debug info
+                logging.info("Spawning character")
+
+                # Spawning character
                 characters.append(character(self.pos, self.team, allowedWeapons[weaponIn], armors[armorIn], baseSpeed))
 
                 self.cooldown = ra.randint(self.minCooldown, self.maxCooldown)
@@ -228,8 +222,19 @@ class effect:
 
         for x in self.particles:
             x[1] -= time
-            if x[1] > 0:    
-                newColor = (self.color[0]-30, self.color[1]-30, self.color[2]-30)
+            if x[1] > 0:
+                # Offset color    
+                newColor = [self.color[0]-30, self.color[1]-30, self.color[2]-30]
+
+                # Check for correct color
+                if newColor[0] < 0:
+                    newColor[0] = 0
+                if newColor[1] < 0:
+                    newColor[1] = 0
+                if newColor[2] < 0:
+                    newColor[2] = 0
+
+                # Draw rectangle
                 py.draw.rect(gamesurf, newColor, x[0])
 
 class tower:
@@ -255,11 +260,11 @@ class tower:
             self.health -= x.damage
             
             if x.duration <= 0:
-                i = getEffectPosinList(x.type, self.effect)
                 try:
-                    del self.effect[i]
+                    del self.effect[self.effect.index(x)]
+                    logging.info("Removing effect")
                 except:
-                    logging.warning(f"Effect not deletet: {i}n")
+                    logging.warning("Effect not deletet")
 
         self.target = py.mouse.get_pos()
 
@@ -379,11 +384,11 @@ class character:
                 self.health -= x.damage*time
 
             if x.duration <= 0:
-                i = getEffectPosinList(x.type, self.effect)
                 try:
-                    del self.effect[i]
+                    del self.effect[self.effect.index(x)]
+                    logging.info("Removing effect")
                 except:
-                    logging.warning("Effect not deletet: {i}")
+                    logging.warning("Effect not deletet")
 
         if self.controlled:
             self.target = py.mouse.get_pos()
@@ -444,7 +449,7 @@ class character:
 
         if weapon.effect is not None:
             if checkList(self.effect, weapon.effect):
-                effectPos = getEffectPosinList(weapon.effect, self.effect)
+                effectPos = self.effect.index(weapon.effect)
                 self.effect[effectPos].effectDuration = weapon.effectDuration
                 self.effect[effectPos].effectDamage = weapon.effectDamage
 
@@ -511,25 +516,17 @@ class textWidget:
         self.surface.blit(widget, self.pos)
 
 class icon:
-    def __init__(self, texture, color1, color2, color3, pos, surface):
-        self.texture = texture
-        self.color1 = color1
-        self.color2 = color2
-        self.color3 = color3
+    def __init__(self, sprit, pos, surface):
+        self.sprit = sprit
         self.pos = pos
         self.surface = surface
 
-    def draw(self, pos):
-        self.pos = pos
-
-        sculpt(self.pos, self.texture, self.color1, self.color2, self.color3, 5)
+    def draw(self):
+        py.Surface.blit(self.sprit, self.pos)
 
 class iconAndText:
-    def __init__(self, texture, color1, color2, color3, scale, font, textColor, backroundColor, backroundSize, text, pos, surface):
-        self.texture = texture
-        self.color1 = color1
-        self.color2 = color2
-        self.color3 = color3
+    def __init__(self, sprit, scale, font, textColor, backroundColor, backroundSize, text, pos, surface):
+        self.sprit = sprit
         self.scale = scale
         self.font = font
         self.textColor = textColor
@@ -539,14 +536,16 @@ class iconAndText:
         self.pos = pos
         self.surface = surface
 
-    def draw(self, pos):
-        self.pos = pos
+    def draw(self, text=None):
+        if text is not None:
+            self.text = text
 
         #py.draw.rect(self.surface, self.backroundColor, (self.pos[0]-100, self.pos[1]-(self.backroundSize[1]/2), self.backroundSize[0], self.backroundSize[1])) #FIX
 
         widget = self.font.render(str(self.text), True, self.textColor)
 
-        sculpt(self.pos, self.texture, self.color1, self.color2, self.color3, self.scale)
+        if self.sprit is not None:
+            py.Surface.blit(self.sprit, self.pos)
         self.surface.blit(widget, (self.pos[0]+50, self.pos[1]))
 
 # Declare Functions
@@ -655,9 +654,10 @@ def checkHits(projectiles, objects):
                             characters[i].resources += ((y.level/3)*20)
 
                     try:
-                        del projectiles[x.pos]
+                        del projectiles[projectiles.index(x)]
+                        logging.info("Removing projectile")
                     except:
-                        logging.warning(f"Projectile not deletet: {x.pos}")
+                        logging.warning("Projectile not deletet")
 
 def offsetTrajectory(start, splatter):
     start[0] = int(start[0])
@@ -710,20 +710,12 @@ def positiveNum(number):
 def sculpt(pos, texture, color1, color2, color3, scale):
     pass
 
-def getEffectPosinList(effect, list):
-    if len(list) <= 1:
-        return 0
-    else:
-        for x in range(len(list)-1):
-            if list[x].type == effect:
-                return x
-
 def getNearestChar(start):
     distance = []
     minDist = [0, 0]
     if len(characters) > 1:
         for x in characters:
-            distance.append((calcDist(start.pos, x.pos), x.seq))
+            distance.append((calcDist(start.pos, x.pos), characters.index(x)))
 
         for y in distance:
             if minDist[0] == 0:
@@ -736,15 +728,15 @@ def getNearestChar(start):
 
 def getNearestFriendlyChar(start):
     distance = []
-    minDist = [0, 0]
+    minDist = None
 
     if len(characters) > 1:
         for x in characters:
             if start.team == x.team:
-                distance.append((calcDist(start.pos, x.pos), x.seq))
+                distance.append((calcDist(start.pos, x.pos), characters.index(x)))
 
         for y in distance:
-            if minDist[0] == 0:
+            if minDist is None:
                 minDist = y
 
             elif minDist[0] > y[0]:
@@ -759,7 +751,7 @@ def getNearestEnemieChar(start):
     if len(characters) > 1:
         for x in characters:
             if start.team != x.team:
-                distance.append((calcDist(start.pos, x.pos), x.seq))
+                distance.append((calcDist(start.pos, x.pos), characters.index(x)))
 
         for y in distance:
             if minDist[0] <= 0:
@@ -768,7 +760,6 @@ def getNearestEnemieChar(start):
             elif minDist[0] > y[0]:
                 minDist = y
 
-        logging.debug(minDist)
         return characters[minDist[1]]
 
 def mindTransport(start, target):
@@ -839,14 +830,6 @@ def reset():
     #                        size = (ra.randrange(20, 50), ra.randrange(20, 50))
     #                        barriers.append(barrier(position, size))
 
-    barriers.append(barrier((0, 0), (WINDOWWIDTH, 10)))
-
-    barriers.append(barrier((0, 0), (10, WINDOWHEIGHT)))
-
-    barriers.append(barrier((0, WINDOWHEIGHT-10), (WINDOWWIDTH, 10)))
-
-    barriers.append(barrier((WINDOWWIDTH-10, 0), (10, WINDOWHEIGHT)))
-
 # Initialsation
 
 # Init pygame
@@ -863,21 +846,19 @@ screen = "main_menu"
 # Creates the main clock
 clock = py.time.Clock()
 
-
-
 # Init all needed modules
 initArmor()
 initWeapon()
 initItem()
 initUpgrade()
 
-# Load up spirits
-#imageNames = blog.blob("images\\*.png")
-imageNames = ()
+# Load up sprits
+imageNames = glob.glob("images\\*.png")
 images =  {}
 
 for x in imageNames:
-    images[x] = py.image.load(f"images\\{x}")
+    x = x.split("\\")[1]
+    images[x] = (py.image.load(f"images\\{x}"))
 
 # Define widgets size & position
 resetButtonSize = (150, 40)
@@ -908,8 +889,8 @@ healthText = textWidget(buttonFont, LIGHTRED, (20, 20), gamesurf)
 resourcesText = textWidget(buttonFont, GREEN, ((WINDOWWIDTH-200), 20), gamesurf)
 waveCooldownText = textWidget(titleFont, GREEN, (WINDOWWIDTH/2, 20), gamesurf)
 
-effectIconText = iconAndText(testIcon, testIcon, testIcon, testIcon, 5, effectFont, ERROCOLOR, BLACK, (1, 1), "None", (40, WINDOWHEIGHT-80), gamesurf)
-equippedItemIconText = iconAndText(testIcon, testIcon, testIcon, testIcon, 2, itemFont, GREEN, LIGHTGREY, (80, 20), "None", (WINDOWWIDTH-180, 80), gamesurf)
+effectIconText = iconAndText(None, 5, effectFont, ERROCOLOR, BLACK, (1, 1), "None", (40, WINDOWHEIGHT-80), gamesurf)
+equippedItemIconText = iconAndText(None, 2, itemFont, GREEN, LIGHTGREY, (80, 20), "None", (WINDOWWIDTH-180, 80), gamesurf)
 
 # Main Loop
 
@@ -1013,13 +994,10 @@ try:
 
                     # Change hud mode
                     elif event.key == py.K_F1:
-                        hudMode += 1
-
-                        if hudMode < 0:
-                            hudMode = 4
-
-                        elif hudMode > 4:
+                        if hudMode == 1:
                             hudMode = 0
+                        else:
+                            hudMode = 1
                         
                 elif event.type == py.MOUSEBUTTONDOWN:
                     # Teleport to mouse position and sets effect
@@ -1164,9 +1142,10 @@ try:
                 for x in characters:
                     if x.team != 0:
                         try:
-                            del characters[x.seq]
+                            del characters[characters.index(x)]
+                            logging.info("Removing character")
                         except:
-                            logging.warning(f"Character not deletet: {x.seq}")
+                            logging.warning("Character not deletet")
 
                 # Print remaining time
                 waveCooldownText.draw(round(waveCooldown, 1))
@@ -1183,9 +1162,10 @@ try:
                 for y in barriers:
                     if checkRectangle(y, x):
                         try:
-                            del projectiles[x.pos]
+                            del projectiles[projectiles.index(x)]
+                            logging.info("Removing projectile")
                         except:
-                            logging.warning(f"Projectile not deletet: {x.pos}")
+                            logging.warning("Projectile not deletet")
 
             # Resorts list indexes
             for x in range(0, len(projectiles)):
@@ -1205,9 +1185,10 @@ try:
 
                     else:
                         try:
-                            del characters[x.seq]
+                            del characters[characters.index(x)]
+                            logging.info("Removing character")
                         except:
-                            logging.warning(f"Character not deletet: {x.seq}")
+                            logging.warning("Character not deletet")
 
             # Draws all objects and handels object specific funktions
             for x in spawnPoints:
@@ -1239,47 +1220,39 @@ try:
             for x in projectiles:
                 if x.range <= 0:
                     try:
-                        del projectiles[x.pos]
+                        del projectiles[projectiles.index(x)]
+                        logging.info("Removing projectile")
                     except:
-                        logging.warning(f"Projectile not deletet: {x.pos}")
+                        logging.warning("Projectile not deletet")
 
-            # Check and display health bars
-            if hudMode > 0:
-                for x in towers:
-                    x.healthBar()
+            # Display the hud
+            for x in towers:
+                x.healthBar()
 
-                for x in characters:
-                    x.healthBar()
-
-            # Check and display the hud
-            if hudMode > 0:
-                for x in towers:
-                    x.healthBar()
-
-                for x in characters:
-                    x.healthBar()
+            for x in characters:
+                x.healthBar()
 
             # Health text and bar
-            if hudMode > 0:
-                healthText.draw(f"{round(characters[char].health, 1)}/{round(characters[char].maxHealth, 1)}")
+            healthText.draw(f"{round(characters[char].health, 1)}/{round(characters[char].maxHealth, 1)}")
 
-            # Last mode & level, resources & curent item
-            if hudMode > 1:
-                levelText.draw(f"Level: {characters[char].level}")
+            # Level, resources & curent item
+            levelText.draw(f"Level: {characters[char].level}")
 
-                resourcesText.draw(f"Resources: {round(characters[char].resources, 1)}")
+            resourcesText.draw(f"Resources: {round(characters[char].resources, 1)}")
                     
-                #equippedItemIconText.draw(f"{items[0].displayName}: {characters[char].inventory.get(items[0].name).amount}") # ERROR
+            equippedItemIconText.draw(f"{items[0].displayName}: {characters[char].inventory.get(items[0].name).amount}")
 
-                #reloadSlider = sliderWidget(LIGHTGREY, GREY, (180, 20), (50, 20), gamesurf)
-                #reloadSlider.draw(characters[char].maxCooldown, characters[char].cooldown, reloadSlider.pos1)
+            #reloadSlider = sliderWidget(LIGHTGREY, GREY, (180, 20), (50, 20), gamesurf)
+            #reloadSlider.draw(characters[char].maxCooldown, characters[char].cooldown, reloadSlider.pos1)
 
-                for x in characters[char].effect:
-                    effectIconText.icon = images.get(effect.type)
-                    effectIconText.draw(effectIconText.pos)
+            for x in characters[char].effect:
+                effectIconText.icon = images.get(x.type)
+                # Refine string out effect type
+                text = str(x.type)[:1].upper() + str(x.type)[1:]
+                effectIconText.draw(text)
 
             # Debug infos
-            if hudMode > 2:
+            if hudMode == 1:
                 fpsText.draw(f"FPS: {int(clock.get_fps())}")
 
         elif screen == "game_paused" or screen == "death_screen":
@@ -1314,9 +1287,6 @@ try:
 # Catch any error an add it to the crash log
 except:
     logging.critical(traceback.format_exc())
-
-    with open(f"crash_log_{currentTime}.txt", "w+") as f:
-        f.write(f"An Error hast occurred: {traceback.format_exc()}")
 
 # Doing final cleanup
 finally:

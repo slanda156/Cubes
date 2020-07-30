@@ -42,16 +42,9 @@
     </tr>
     <tr>
         <td>F1:</td>
-        <td>Switch hud modes</td>
+        <td>Toggles debug infos</td>
     </tr>
 </table>
-<h3>Hudmodes:</h3>
-<ol>
-<li>Nothing</li>
-<li>Healthbar</li>
-<li>2. & Level, reload, resources, status icons & text, equiped item</li>
-<li>4. & Performance</li>
-</ol>
 
 <h2>Weapons</h2>
 
