@@ -20,6 +20,7 @@ from upgrade import upgradeNum, upgrades, initUpgrade
 # Define the window
 setFPS = 60
 QUALITY = (16, 9)
+cordOffset = py.Vector2(0, 0)
 WINDOWWIDTH = 2040
 WINDOWHEIGHT = int((WINDOWWIDTH/QUALITY[0])*QUALITY[1])
 
@@ -29,7 +30,6 @@ version = "0.24"
 t = ti.localtime()
 currentTime = ti.strftime("%H_%M_%S", t)
 startTime = ti.time()
-formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s", "%Y-%m-%d %H:%M:%S")
 logging.basicConfig(filename=f"log_{currentTime}.log", level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
 
 logging.info(f"Starting, version: {version}")
@@ -125,9 +125,11 @@ class spawnPoint:
         self.minCooldown = 4
         self.cooldown = self.maxCooldown
 
-    def draw(self):
-        py.draw.rect(gamesurf, GREY, (self.pos[0]-30, self.pos[1]-30, 60, 60))
-        py.draw.rect(gamesurf, GREEN, (self.pos[0]-25, self.pos[1]-25, 50, 50))
+    def draw(self, offset):
+        self.newPos = self.pos - offset
+
+        py.draw.rect(gamesurf, GREY, (self.newPos[0]-30, self.newPos[1]-30, 60, 60))
+        py.draw.rect(gamesurf, GREEN, (self.newPos[0]-25, self.newPos[1]-25, 50, 50))
 
     def spawn(self):
         if self.team != 0 and len(characters) < maxChar + 1:
@@ -172,7 +174,6 @@ class projectile:
         self.start = start
         self.dierection = dierection
         self.power = int(power)
-        self.pos = 0
         self.team = team
         self.weapon = weapon
         self.range = weapon.range
@@ -187,16 +188,17 @@ class projectile:
 
         self.offset = self.dierection
 
-    def draw(self):
+    def draw(self, offset):
+        self.newStart = self.start - offset
         #self.offset.scale_to_length(self.weapon.speed/1000 * time) # FIX
 
         if self.weapon.type == plasma:
-            py.draw.circle(gamesurf, self.weapon.color, (int(self.start[0]), int(self.start[1])), int(self.power/2))
+            py.draw.circle(gamesurf, self.weapon.color, (int(self.newStart[0]), int(self.newStart[1])), int(self.power/2))
         else:
             if self.power < 5:
-                py.draw.line(gamesurf, self.weapon.color, self.start, (self.start + self.dierection), self.power*2)
+                py.draw.line(gamesurf, self.weapon.color, self.newStart, (self.newStart + self.dierection), self.power*2)
             else:
-                py.draw.line(gamesurf, self.weapon.color, self.start, (self.start + self.dierection), self.power*2)
+                py.draw.line(gamesurf, self.weapon.color, self.newStart, (self.newStart + self.dierection), self.power*2)
 
         self.start += self.offset
         self.range -= self.offset.length()
@@ -207,35 +209,6 @@ class effect:
         self.duration = effectDuration
         self.damage = effectDamage
         self.color = effectColor
-        self.pos = py.Vector2(0, 0)
-        self.counter = 1
-        self.particles = []
-
-    def draw(self, pos):
-        self.pos = pos
-        self.counter += time
-        new = False
-
-        if len(self.particles) < 4:
-            self.pos = offsetTrajectory(self.pos, 10)
-            self.particles.append([py.Rect(self.pos[0], self.pos[1], 4, 4), 2.5])
-
-        for x in self.particles:
-            x[1] -= time
-            if x[1] > 0:
-                # Offset color    
-                newColor = [self.color[0]-30, self.color[1]-30, self.color[2]-30]
-
-                # Check for correct color
-                if newColor[0] < 0:
-                    newColor[0] = 0
-                if newColor[1] < 0:
-                    newColor[1] = 0
-                if newColor[2] < 0:
-                    newColor[2] = 0
-
-                # Draw rectangle
-                py.draw.rect(gamesurf, newColor, x[0])
 
 class tower:
     def __init__(self, pos, team, weapon, level, accuracy):
@@ -243,7 +216,6 @@ class tower:
         self.type = "tower"
         self.weapon = weapon
         self.level = level
-        self.seq = 0
         self.maxHealth = self.level * 5
         self.health = self.maxHealth
         self.maxCooldown = weapon.reloadTime / 100
@@ -255,7 +227,11 @@ class tower:
         self.pos = (int(pos[0]+(self.radius*self.factor)), int(pos[1]+(self.radius*self.factor)))
         self.size = (self.radius * 2 * self.factor, self.radius * 2 * self.factor)
 
-    def draw(self):
+    def draw(self, offset):
+        self.newPos = self.pos - offset
+
+        self.newPos[0], self.newPos[1] = int(self.newPos[0]), int(self.newPos[1])
+
         for x in self.effect:
             self.health -= x.damage
             
@@ -282,11 +258,11 @@ class tower:
         if self.cooldown > 0:
             self.cooldown -= time
 
-        py.draw.rect(gamesurf, GREY, ((self.pos[0]-(self.size[0]/2)), (self.pos[1]-(self.size[1]/2)), self.size[0], self.size[1]))
+        py.draw.rect(gamesurf, GREY, ((self.newPos[0]-(self.size[0]/2)), (self.newPos[1]-(self.size[1]/2)), self.size[0], self.size[1]))
 
-        py.draw.circle(gamesurf, RED, self.pos, self.radius)
+        py.draw.circle(gamesurf, RED, self.newPos, self.radius)
 
-        py.draw.line(gamesurf, self.weapon.color, self.pos, (self.pos + self.dir), int(self.radius/4))
+        py.draw.line(gamesurf, self.weapon.color, self.newPos, (self.newPos + self.dir), int(self.radius/4))
 
     def getHit(self, weapon):
         self.effectDuration = weapon.effectDuration
@@ -316,7 +292,6 @@ class character:
     def __init__(self, pos, team, weapon, armor, speed, controlled=False):
         self.controlled = controlled
         self.pos = [pos[0], pos[1]]
-        self.seq = 0
         self.team = team
         self.type = "player"
         self.weapon = weapon
@@ -355,7 +330,9 @@ class character:
         else:
             self.movementSpeed = int(speed)
 
-    def draw(self):
+    def draw(self, offset):
+        self.newPos = self.pos - offset
+
         self.maxCooldown = self.weapon.reloadTime / 100
 
         if self.armor.type == physical:
@@ -391,7 +368,7 @@ class character:
                     logging.warning("Effect not deletet")
 
         if self.controlled:
-            self.target = py.mouse.get_pos()
+            self.target = py.mouse.get_pos() + offset
         else:
             self.target = characters[findPlayerChar()].pos
 
@@ -406,13 +383,11 @@ class character:
             if x.duration > 0:
                 x.duration -= time
 
-            x.draw(self.pos)
+        py.draw.circle(gamesurf, (200, 200, 200), (int(self.newPos[0]), int(self.newPos[1])), self.radius)
 
-        py.draw.circle(gamesurf, (200, 200, 200), (int(self.pos[0]), int(self.pos[1])), self.radius)
+        py.draw.line(gamesurf, self.weapon.color, self.newPos, (self.newPos + self.dir), int(self.radius/4))
 
-        py.draw.line(gamesurf, self.weapon.color, self.pos, (self.pos + self.dir), int(self.radius/4))
-
-        py.draw.circle(gamesurf, self.armor.color, (int(self.pos[0]), int(self.pos[1])), int(self.radius/3))
+        py.draw.circle(gamesurf, self.armor.color, (int(self.newPos[0]), int(self.newPos[1])), int(self.radius/3))
 
         self.cooldown -= time
 
@@ -463,7 +438,7 @@ class character:
             self.health -= weapon.damage
 
     def healthBar(self):
-        pos = self.pos + py.Vector2(0, -20)
+        pos = self.newPos + py.Vector2(0, -20)
 
         py.draw.rect(gamesurf, GREY, (pos[0]-20, pos[1]-6, 40, 12))
 
@@ -553,7 +528,7 @@ class iconAndText:
 def findPlayerChar():
     for x in characters:
         if x.controlled:
-            return x.seq
+            return characters.index(x)
 
 def canSeeTarget(start, target):
     if True and True:
@@ -655,7 +630,6 @@ def checkHits(projectiles, objects):
 
                     try:
                         del projectiles[projectiles.index(x)]
-                        logging.info("Removing projectile")
                     except:
                         logging.warning("Projectile not deletet")
 
@@ -784,6 +758,10 @@ def reset():
     global projectiles
     global baseSpeed
     global towers
+    global cordOffset
+
+    cordOffset[0] = 0
+    cordOffset[1] = 0
 
     oldWeapon = weapons[0]
     oldArmor = armors[0]
@@ -801,19 +779,24 @@ def reset():
     pos = (ra.randrange(100, WINDOWWIDTH-100), ra.randrange(100, WINDOWHEIGHT-100))
     characters.append(character(pos, 0, oldWeapon, oldArmor, baseSpeed, True))
 
+    pos = (ra.randrange(50, WINDOWWIDTH-50), ra.randrange(50, WINDOWHEIGHT-50))
+
     while len(spawnPoints) < 5:
         fails = 0
         if fails > 20:
             break
 
-        pos = (ra.randrange(50, WINDOWWIDTH-50), ra.randrange(50, WINDOWHEIGHT-50))
+        offset = py.Vector2(ra.randrange(-10, 10), ra.randrange(-10, 10))
+        if offset.length() != 0:
+            offset.scale_to_length(ra.randrange(0, 30))
+
         if len(spawnPoints) <= 0:
-            spawnPoints.append(spawnPoint(pos, 1))
+            spawnPoints.append(spawnPoint(pos+offset, 1))
 
         else:
             for x in spawnPoints:
-                if calcDist(x.pos, pos) > 500:
-                    spawnPoints.append(spawnPoint(pos, 1))
+                if calcDist(x.pos, pos+offset) > 30:
+                    spawnPoints.append(spawnPoint(pos+offset, 1))
                 else:
                     fails += 1
 
@@ -897,7 +880,7 @@ equippedItemIconText = iconAndText(None, 2, itemFont, GREEN, LIGHTGREY, (80, 20)
 # Resets all variables
 reset()
 
-logging.info(f"Loaded after: {round(ti.time()-startTime, 3)}s")
+logging.info(f"Loaded after: {round(ti.time()-startTime, 3)} s")
 
 try:
     while running:
@@ -958,8 +941,7 @@ try:
 
                     # Quit game
                     elif quitButton.collidepoint(py.mouse.get_pos()):
-                        py.display.quit()
-                        break                
+                        running = False
 
             elif screen == "options":
                 pass
@@ -1163,19 +1145,8 @@ try:
                     if checkRectangle(y, x):
                         try:
                             del projectiles[projectiles.index(x)]
-                            logging.info("Removing projectile")
                         except:
                             logging.warning("Projectile not deletet")
-
-            # Resorts list indexes
-            for x in range(0, len(projectiles)):
-                projectiles[x].pos = x
-
-            for x in range(0, len(towers)):
-                towers[x].seq = x
-
-            for x in range(0, len(characters)):
-                characters[x].seq = x
 
             # Check for dead characters and delets them
             for x in characters:
@@ -1192,36 +1163,36 @@ try:
 
             # Draws all objects and handels object specific funktions
             for x in spawnPoints:
-                x.draw()
+                x.draw(cordOffset)
                 if waveCooldown <= 0:
                     x.spawn()
 
             for x in barriers:
-                x.draw()
+                x.draw(cordOffset)
 
             for x in towers:
-                x.draw()
+                x.draw(cordOffset)
 
             for x in characters:
-                x.draw()
-                if x.pos[0] < 0:
-                    x.pos[0] = 0
-                elif x.pos[0] > WINDOWWIDTH:
-                    x.pos[0] = WINDOWWIDTH
-                if x.pos[1] < 0:
-                    x.pos[1] = 0
-                elif x.pos[1] > WINDOWHEIGHT:
-                    x.pos[1] = WINDOWHEIGHT
+                x.draw(cordOffset)
+                # Change cord offset to move window
+                if x.newPos[0] < 100:
+                    cordOffset[0] -= (100 - x.newPos[0])
+                if x.newPos[0] > (WINDOWWIDTH - 100):
+                    cordOffset[0] += (x.newPos[0] - (WINDOWWIDTH - 100))
+                if x.newPos[1] < 100:
+                    cordOffset[1] -= (100 - x.newPos[1])
+                if x.newPos[1] > (WINDOWHEIGHT - 100):
+                    cordOffset[1] += (x.newPos[1] - (WINDOWHEIGHT - 100))
 
             for x in projectiles:
-                x.draw()
+                x.draw(cordOffset)
 
             # Check for outranged projectiles
             for x in projectiles:
                 if x.range <= 0:
                     try:
                         del projectiles[projectiles.index(x)]
-                        logging.info("Removing projectile")
                     except:
                         logging.warning("Projectile not deletet")
 
@@ -1293,3 +1264,5 @@ finally:
 
     # Stops all pygame modules and closes all windows
     py.quit()
+    # Prints end of log
+    logging.info(f"Stopping after: {round(ti.time()-startTime, 3)} s")
