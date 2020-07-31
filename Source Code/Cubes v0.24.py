@@ -81,6 +81,7 @@ towers = []
 projectiles = []
 barriers = []
 spawnPoints = []
+testRects = []
 
 downTriangle = [py.Vector2(0, 0), py.Vector2(20, 0), py.Vector2(10, 10)]
 upTriangle = [py.Vector2(0, 10), py.Vector2(20, 10), py.Vector2(10, 0)]
@@ -104,6 +105,18 @@ laser = damageTypes.get("laser")
 plasma = damageTypes.get("plasma")
 
 # Define Classes
+
+class drawTest:
+    def __init__(self, pos):
+        self.pos = pos
+
+    def draw(self, offset, pos=None):
+        self.newPos = self.pos - offset
+        
+        if pos is not None:
+            self.pos = pos
+        
+        py.draw.rect(gamesurf, ERROCOLOR, (self.newPos[0], self.newPos[1], 25, 25))
 
 class barrier:
     def __init__(self, pos, size, death=False):
@@ -781,6 +794,8 @@ def reset():
 
     pos = (ra.randrange(50, WINDOWWIDTH-50), ra.randrange(50, WINDOWHEIGHT-50))
 
+    testRects.append(drawTest(pos))
+
     while len(spawnPoints) < 5:
         fails = 0
         if fails > 20:
@@ -788,14 +803,14 @@ def reset():
 
         offset = py.Vector2(ra.randrange(-10, 10), ra.randrange(-10, 10))
         if offset.length() != 0:
-            offset.scale_to_length(ra.randrange(0, 30))
+            offset.scale_to_length(ra.randrange(60, 120))
 
         if len(spawnPoints) <= 0:
             spawnPoints.append(spawnPoint(pos+offset, 1))
 
         else:
             for x in spawnPoints:
-                if calcDist(x.pos, pos+offset) > 30:
+                if calcDist(x.pos, pos+offset) > 120:
                     spawnPoints.append(spawnPoint(pos+offset, 1))
                 else:
                     fails += 1
@@ -843,38 +858,6 @@ for x in imageNames:
     x = x.split("\\")[1]
     images[x] = (py.image.load(f"images\\{x}"))
 
-# Define widgets size & position
-resetButtonSize = (150, 40)
-resetButtonPos = ((WINDOWWIDTH//2)-(resetButtonSize[0]//2), (WINDOWHEIGHT//2)-(resetButtonSize[1]//2))
-
-menuButtonSize = (150, 40)
-menuButtonPos = ((WINDOWWIDTH//2)-(menuButtonSize[0]//2), (WINDOWHEIGHT//2)-menuButtonSize[1]//2+50)
-
-upPos1 = ((WINDOWWIDTH/2)-100, (WINDOWHEIGHT/4)+130)
-downPos1 = ((WINDOWWIDTH/2)-100, (WINDOWHEIGHT/4)+80)
-upPos2 = ((WINDOWWIDTH/2)-100, (WINDOWHEIGHT/4)+50)
-downPos2 = ((WINDOWWIDTH/2)-100, (WINDOWHEIGHT/4))
-
-# Define widgets
-armorText = textWidget(buttonFont, armors[0].color, ((WINDOWWIDTH/2)-70, (WINDOWHEIGHT/4)+15), gamesurf)
-weaponText = textWidget(buttonFont, weapons[0].color, ((WINDOWWIDTH/2)-70, (WINDOWHEIGHT/4)+90), gamesurf)
-quitText = textWidget(buttonFont, BLACK, ((WINDOWWIDTH/2)-35, (WINDOWHEIGHT/3)+100), gamesurf)
-titletext = textWidget(title2Font, (220, 220, 220), (WINDOWWIDTH/2-90, 150), gamesurf)
-deadText = textWidget(titleFont, RED, (WINDOWWIDTH/2-100, WINDOWHEIGHT*0.2), gamesurf)
-playText = textWidget(buttonFont, BLACK, ((WINDOWWIDTH/2)-30, (WINDOWHEIGHT/3)+50), gamesurf)
-menuText = textWidget(buttonFont, BLACK, (menuButtonPos[0]+(menuButtonSize[0]*0.1), menuButtonPos[1]), gamesurf)
-resetText = textWidget(buttonFont, BLACK, (resetButtonPos[0]+(resetButtonSize[0]*0.22), resetButtonPos[1]), gamesurf)
-pauseText = textWidget(titleFont, WHITE, (WINDOWWIDTH/2-100, WINDOWHEIGHT*0.2), gamesurf)
-fpsText = textWidget(buttonFont, GREEN, ((WINDOWWIDTH/2), 20), gamesurf)
-xpText = textWidget(buttonFont, GREEN, (20, 80), gamesurf)
-levelText = textWidget(buttonFont, GREEN, (20, 50), gamesurf)
-healthText = textWidget(buttonFont, LIGHTRED, (20, 20), gamesurf)
-resourcesText = textWidget(buttonFont, GREEN, ((WINDOWWIDTH-200), 20), gamesurf)
-waveCooldownText = textWidget(titleFont, GREEN, (WINDOWWIDTH/2, 20), gamesurf)
-
-effectIconText = iconAndText(None, 5, effectFont, ERROCOLOR, BLACK, (1, 1), "None", (40, WINDOWHEIGHT-80), gamesurf)
-equippedItemIconText = iconAndText(None, 2, itemFont, GREEN, LIGHTGREY, (80, 20), "None", (WINDOWWIDTH-180, 80), gamesurf)
-
 # Main Loop
 
 # Resets all variables
@@ -884,10 +867,6 @@ logging.info(f"Loaded after: {round(ti.time()-startTime, 3)} s")
 
 try:
     while running:
-        # Gets window size
-        WINDOWHEIGHT = gamesurf.get_height()
-        WINDOWWIDTH = gamesurf.get_width()
-
         # Resets backround
         gamesurf.fill(BLACK)
         # Sets global time variable
@@ -904,11 +883,47 @@ try:
         else:
             maxChar = 10
 
+        # Define widgets size & position
+        resetButtonSize = (150, 40)
+        resetButtonPos = ((WINDOWWIDTH//2)-(resetButtonSize[0]//2), (WINDOWHEIGHT//2)-(resetButtonSize[1]//2))
+
+        menuButtonSize = (150, 40)
+        menuButtonPos = ((WINDOWWIDTH//2)-(menuButtonSize[0]//2), (WINDOWHEIGHT//2)-menuButtonSize[1]//2+50)
+
+        upPos1 = ((WINDOWWIDTH/2)-100, (WINDOWHEIGHT/4)+130)
+        downPos1 = ((WINDOWWIDTH/2)-100, (WINDOWHEIGHT/4)+80)
+        upPos2 = ((WINDOWWIDTH/2)-100, (WINDOWHEIGHT/4)+50)
+        downPos2 = ((WINDOWWIDTH/2)-100, (WINDOWHEIGHT/4))
+
+        # Define widgets
+        armorText = textWidget(buttonFont, armors[0].color, ((WINDOWWIDTH/2)-70, (WINDOWHEIGHT/4)+15), gamesurf)
+        weaponText = textWidget(buttonFont, weapons[0].color, ((WINDOWWIDTH/2)-70, (WINDOWHEIGHT/4)+90), gamesurf)
+        quitText = textWidget(buttonFont, BLACK, ((WINDOWWIDTH/2)-35, (WINDOWHEIGHT/3)+100), gamesurf)
+        titletext = textWidget(title2Font, (220, 220, 220), (WINDOWWIDTH/2-90, 150), gamesurf)
+        deadText = textWidget(titleFont, RED, (WINDOWWIDTH/2-100, WINDOWHEIGHT*0.2), gamesurf)
+        playText = textWidget(buttonFont, BLACK, ((WINDOWWIDTH/2)-30, (WINDOWHEIGHT/3)+50), gamesurf)
+        menuText = textWidget(buttonFont, BLACK, (menuButtonPos[0]+(menuButtonSize[0]*0.1), menuButtonPos[1]), gamesurf)
+        resetText = textWidget(buttonFont, BLACK, (resetButtonPos[0]+(resetButtonSize[0]*0.22), resetButtonPos[1]), gamesurf)
+        pauseText = textWidget(titleFont, WHITE, (WINDOWWIDTH/2-100, WINDOWHEIGHT*0.2), gamesurf)
+        fpsText = textWidget(buttonFont, GREEN, ((WINDOWWIDTH/2), 20), gamesurf)
+        xpText = textWidget(buttonFont, GREEN, (20, 80), gamesurf)
+        levelText = textWidget(buttonFont, GREEN, (20, 50), gamesurf)
+        healthText = textWidget(buttonFont, LIGHTRED, (20, 20), gamesurf)
+        resourcesText = textWidget(buttonFont, GREEN, ((WINDOWWIDTH-200), 20), gamesurf)
+        waveCooldownText = textWidget(titleFont, GREEN, (WINDOWWIDTH/2, 20), gamesurf)
+
+        effectIconText = iconAndText(None, 5, effectFont, ERROCOLOR, BLACK, (1, 1), "None", (40, WINDOWHEIGHT-80), gamesurf)
+        equippedItemIconText = iconAndText(None, 2, itemFont, GREEN, LIGHTGREY, (80, 20), "None", (WINDOWWIDTH-180, 80), gamesurf)
+
         # Main event loop
         for event in py.event.get():
             # Resize the main window
             if event.type == py.VIDEORESIZE:
+                # Resize display
                 gamesurf = py.display.set_mode((event.w, event.h), py.RESIZABLE)
+                # Gets window size
+                WINDOWHEIGHT = gamesurf.get_height()
+                WINDOWWIDTH = gamesurf.get_width()
 
             # Breaks loop when window closes
             if event.type == py.QUIT:
@@ -1175,15 +1190,16 @@ try:
 
             for x in characters:
                 x.draw(cordOffset)
-                # Change cord offset to move window
-                if x.newPos[0] < 100:
-                    cordOffset[0] -= (100 - x.newPos[0])
-                if x.newPos[0] > (WINDOWWIDTH - 100):
-                    cordOffset[0] += (x.newPos[0] - (WINDOWWIDTH - 100))
-                if x.newPos[1] < 100:
-                    cordOffset[1] -= (100 - x.newPos[1])
-                if x.newPos[1] > (WINDOWHEIGHT - 100):
-                    cordOffset[1] += (x.newPos[1] - (WINDOWHEIGHT - 100))
+                if x.controlled:
+                    # Change cord offset to move window
+                    if x.newPos[0] < 500:
+                        cordOffset[0] -= (500 - x.newPos[0])
+                    if x.newPos[0] > (WINDOWWIDTH - 500):
+                        cordOffset[0] += (x.newPos[0] - (WINDOWWIDTH - 500))
+                    if x.newPos[1] < 500:
+                        cordOffset[1] -= (500 - x.newPos[1])
+                    if x.newPos[1] > (WINDOWHEIGHT - 500):
+                        cordOffset[1] += (x.newPos[1] - (WINDOWHEIGHT - 500))
 
             for x in projectiles:
                 x.draw(cordOffset)
@@ -1202,6 +1218,9 @@ try:
 
             for x in characters:
                 x.healthBar()
+
+            for x in testRects:
+                x.draw(cordOffset)
 
             # Health text and bar
             healthText.draw(f"{round(characters[char].health, 1)}/{round(characters[char].maxHealth, 1)}")
