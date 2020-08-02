@@ -3,7 +3,6 @@
 <h2>Installation</h2>
 <ol>
 <li>Download reposite and unzip it</li>
-<li>I cant compile an exe. Use master branch instead</li>
 <li>Open <code>Cubes\Cubes.exe</code></li>
 </ol>
 
