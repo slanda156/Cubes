@@ -243,7 +243,7 @@ class tower:
     def draw(self, offset):
         self.newPos = self.pos - offset
 
-        self.newPos[0], self.newPos[1] = int(self.newPos[0]), int(self.newPos[1])
+        self.newPos = (int(self.newPos[0]), int(self.newPos[1]))
 
         for x in self.effect:
             self.health -= x.damage
@@ -255,7 +255,7 @@ class tower:
                 except:
                     logging.warning("Effect not deletet")
 
-        self.target = py.mouse.get_pos()
+        self.target = py.mouse.get_pos() - offset
 
         if getNearestEnemieChar(self) is not None:
             self.target = getNearestEnemieChar(self).pos
@@ -291,7 +291,7 @@ class tower:
         self.cooldown = self.maxCooldown
 
     def healthBar(self):
-        pos = self.pos + py.Vector2(0, -20)
+        pos = self.newPos + py.Vector2(0, -20)
 
         py.draw.rect(gamesurf, GREY, (pos[0]-20, pos[1]-6, 40, 12))
 
@@ -513,13 +513,11 @@ class icon:
         py.Surface.blit(self.sprit, self.pos)
 
 class iconAndText:
-    def __init__(self, sprit, scale, font, textColor, backroundColor, backroundSize, text, pos, surface):
+    def __init__(self, sprit, scale, font, textColor, text, pos, surface):
         self.sprit = sprit
         self.scale = scale
         self.font = font
         self.textColor = textColor
-        self.backroundColor = backroundColor
-        self.backroundSize = backroundSize
         self.text = text
         self.pos = pos
         self.surface = surface
@@ -527,8 +525,6 @@ class iconAndText:
     def draw(self, text=None):
         if text is not None:
             self.text = text
-
-        #py.draw.rect(self.surface, self.backroundColor, (self.pos[0]-100, self.pos[1]-(self.backroundSize[1]/2), self.backroundSize[0], self.backroundSize[1])) #FIX
 
         widget = self.font.render(str(self.text), True, self.textColor)
 
@@ -912,8 +908,8 @@ try:
         resourcesText = textWidget(buttonFont, GREEN, ((WINDOWWIDTH-200), 20), gamesurf)
         waveCooldownText = textWidget(titleFont, GREEN, (WINDOWWIDTH/2, 20), gamesurf)
 
-        effectIconText = iconAndText(None, 5, effectFont, ERROCOLOR, BLACK, (1, 1), "None", (40, WINDOWHEIGHT-80), gamesurf)
-        equippedItemIconText = iconAndText(None, 2, itemFont, GREEN, LIGHTGREY, (80, 20), "None", (WINDOWWIDTH-180, 80), gamesurf)
+        effectIconText = iconAndText(None, 5, effectFont, ERROCOLOR, "None", (40, WINDOWHEIGHT-80), gamesurf)
+        equippedItemIconText = iconAndText(None, 2, itemFont, GREEN, "None", (WINDOWWIDTH-180, 80), gamesurf)
 
         # Main event loop
         for event in py.event.get():
