@@ -81,7 +81,7 @@ towers = []
 projectiles = []
 barriers = []
 spawnPoints = []
-testRects = []
+dots = []
 
 downTriangle = [py.Vector2(0, 0), py.Vector2(20, 0), py.Vector2(10, 10)]
 upTriangle = [py.Vector2(0, 10), py.Vector2(20, 10), py.Vector2(10, 0)]
@@ -106,17 +106,16 @@ plasma = damageTypes.get("plasma")
 
 # Define Classes
 
-class drawTest:
+class point:
     def __init__(self, pos):
         self.pos = pos
 
-    def draw(self, offset, pos=None):
+    def draw(self, offset):
         self.newPos = self.pos - offset
-        
-        if pos is not None:
-            self.pos = pos
-        
-        py.draw.rect(gamesurf, ERROCOLOR, (self.newPos[0], self.newPos[1], 25, 25))
+
+        self.newPos = (int(self.newPos[0]), int(self.newPos[1]))
+
+        py.draw.circle(gamesurf, ERROCOLOR, self.newPos, 10)
 
 class barrier:
     def __init__(self, pos, size, death=False):
@@ -124,7 +123,11 @@ class barrier:
         self.size = size
         self.death = death
 
-    def draw(self):
+    def draw(self, offset):
+        self.newPos = self.pos - offset
+
+        self.newPos = (int(self.newPos[0]), int(self.newPos[1]))
+
         if self.death:
             py.draw.rect(gamesurf, RED, (self.pos[0], self.pos[1], self.size[0], self.size[1]))
         else:
@@ -139,7 +142,8 @@ class spawnPoint:
         self.cooldown = self.maxCooldown
 
     def draw(self, offset):
-        self.newPos = self.pos - offset
+        self.newPos = (int(self.pos[0] - offset[0]), int(self.pos[1] - offset[1]))
+        
 
         py.draw.rect(gamesurf, GREY, (self.newPos[0]-30, self.newPos[1]-30, 60, 60))
         py.draw.rect(gamesurf, GREEN, (self.newPos[0]-25, self.newPos[1]-25, 50, 50))
@@ -203,15 +207,13 @@ class projectile:
 
     def draw(self, offset):
         self.newStart = self.start - offset
+        self.newStart = (int(self.newStart[0]), int(self.newStart[1]))
         #self.offset.scale_to_length(self.weapon.speed/1000 * time) # FIX
 
         if self.weapon.type == plasma:
             py.draw.circle(gamesurf, self.weapon.color, (int(self.newStart[0]), int(self.newStart[1])), int(self.power/2))
         else:
-            if self.power < 5:
-                py.draw.line(gamesurf, self.weapon.color, self.newStart, (self.newStart + self.dierection), self.power*2)
-            else:
-                py.draw.line(gamesurf, self.weapon.color, self.newStart, (self.newStart + self.dierection), self.power*2)
+            py.draw.line(gamesurf, self.weapon.color, self.newStart, (self.newStart + self.dierection), self.power*2)
 
         self.start += self.offset
         self.range -= self.offset.length()
@@ -345,6 +347,7 @@ class character:
 
     def draw(self, offset):
         self.newPos = self.pos - offset
+        self.newPos = (int(self.newPos[0]), int(self.newPos[1]))
 
         self.maxCooldown = self.weapon.reloadTime / 100
 
@@ -756,7 +759,46 @@ def die():
     dead = True
     reset()
 
+def generatePointsAroundDot(pos, minVar, maxVar):
+    points = []
+    power = ra.randrange(minVar, maxVar)
+    
+    while len(points) < power:
+        distance = []
+        minVal = 0
+    
+        a = ra.randrange(-10, 10)
+        b = ra.randrange(-10, 10)
+        c = ra.randrange(40, 400)
+        offset = py.Vector2(a, b)
+        
+        if offset.length() != 0:
+            offset.scale_to_length(c)
+    
+        if len(points) > 1:
+            for x in points:
+                if calcDist(x.pos, pos+offset) > 100:
+                    distance.append((calcDist(x.pos, pos+offset)))
+                
+            for x in distance:
+                if minVal != 0:
+                    if minVal < x:
+                        minVal = x
+                
+                else:
+                    minVal = x
+    
+            if minVal > 50:
+                points.append(point(pos+offset))
+                
+        else:
+            points.append(point(pos+offset))
+    
+    return points
+
 def reset():
+    logging.info("Reset")
+
     gamesurf.fill(BLACK)
     py.event.clear()
 
@@ -785,44 +827,13 @@ def reset():
     spawnPoints = []
     towers = []
 
-    pos = (ra.randrange(100, WINDOWWIDTH-100), ra.randrange(100, WINDOWHEIGHT-100))
+    pos = (WINDOWWIDTH/2, WINDOWHEIGHT/2)
     characters.append(character(pos, 0, oldWeapon, oldArmor, baseSpeed, True))
 
-    pos = (ra.randrange(50, WINDOWWIDTH-50), ra.randrange(50, WINDOWHEIGHT-50))
+    pos = (ra.randrange(0, WINDOWWIDTH), ra.randrange(0, WINDOWHEIGHT))
 
-    testRects.append(drawTest(pos))
-
-    while len(spawnPoints) < 5:
-        fails = 0
-        if fails > 20:
-            break
-
-        offset = py.Vector2(ra.randrange(-10, 10), ra.randrange(-10, 10))
-        if offset.length() != 0:
-            offset.scale_to_length(ra.randrange(60, 120))
-
-        if len(spawnPoints) <= 0:
-            spawnPoints.append(spawnPoint(pos+offset, 1))
-
-        else:
-            for x in spawnPoints:
-                if calcDist(x.pos, pos+offset) > 120:
-                    spawnPoints.append(spawnPoint(pos+offset, 1))
-                else:
-                    fails += 1
-
-    #for x in spawnPoints:  # To laggie
-    #    toSpawn = 8
-    #    while toSpawn > 0:
-    #        position = (ra.randrange(x.pos[0]-500, x.pos[0]+500), ra.randrange(x.pos[1]-500, x.pos[1]+500))
-    #        if position[0] > 50 and position[1] > 50 and position[0] < WINDOWWIDTH-50 and position[1] < WINDOWHEIGHT-50:
-    #            distance = calcDist(x.pos, position)
-    #            if distance > 50 and distance < 500:
-    #                for y in barriers:
-    #                    if calcDist(position, y.pos) > 40:
-    #                        toSpawn -= 1
-    #                        size = (ra.randrange(20, 50), ra.randrange(20, 50))
-    #                        barriers.append(barrier(position, size))
+    for x in generatePointsAroundDot(pos, 2, 10):
+        spawnPoints.append(spawnPoint(x.pos, 1))
 
 # Initialsation
 
@@ -1144,10 +1155,10 @@ try:
                 waveCooldownText.draw(round(waveCooldown, 1))
                 waveCooldown -= time
 
-            # cheking for hits
+            #cheking for hits
             #for x in characters:
-            #    for y in barriers:
-            #        checkCollision(x, y)
+            #   for y in barriers:
+            #       checkCollision(x, y)
 
             checkHits(projectiles, characters)
 
@@ -1215,7 +1226,7 @@ try:
             for x in characters:
                 x.healthBar()
 
-            for x in testRects:
+            for x in dots:
                 x.draw(cordOffset)
 
             # Health text and bar
