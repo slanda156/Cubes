@@ -80,8 +80,8 @@ characters = []
 towers = []
 projectiles = []
 barriers = []
-spawnPoints = []
 dots = []
+nests = []
 
 downTriangle = [py.Vector2(0, 0), py.Vector2(20, 0), py.Vector2(10, 10)]
 upTriangle = [py.Vector2(0, 10), py.Vector2(20, 10), py.Vector2(10, 0)]
@@ -132,6 +132,62 @@ class barrier:
             py.draw.rect(gamesurf, RED, (self.pos[0], self.pos[1], self.size[0], self.size[1]))
         else:
             py.draw.rect(gamesurf, LIGHTGREY, (self.pos[0], self.pos[1], self.size[0], self.size[1]))
+
+class nest:
+    def __init__(self, pos, team):
+        self.pos = pos
+        self.members = []
+        self.hearts = []
+        self.maxVal = 7
+        self.team = team
+    
+    def append(self, member):
+        self.members.append(member)
+        self.size = len(self.members)
+
+        if self.size >= self.maxVal:
+            self.maxVal += 2
+            i = 0
+            a = ra.randrange(0, self.size - 1)
+            
+            while i < 2:
+                del self.members[a]
+                self.size = len(self.members)
+                i += 1
+            
+            self.hearts.append(heart(self.pos, self.team))
+
+    def attack(self):
+        for x in self.hearts:
+            if x.cooldown <= 0:
+                x.attack()
+
+    def draw(self, offset):
+        self.newPos = self.pos - offset
+        self.newPos = (int(self.newPos[0]), int(self.newPos[1]))
+        pass
+
+class heart:
+    def __init__(self, pos, team):
+        self.pos = pos
+        self.team = team
+        self.maxCooldown = 120
+        self.cooldown = self.maxCooldown
+        self.dot = point(self.pos)
+
+    def atack(self):
+        pass
+
+    def draw(offset):
+        self.newPos = self.pos - offset
+        self.newPos = (int(self.newPos[0]), int(self.newPos[1]))
+
+        self.cooldown -= time
+
+        if self.cooldown <= 0:
+            self.cooldown = 0
+
+        self.dot.draw(offset)
 
 class spawnPoint:
     def __init__(self, pos, team):
@@ -542,12 +598,6 @@ def findPlayerChar():
         if x.controlled:
             return characters.index(x)
 
-def canSeeTarget(start, target):
-    if True and True:
-        return True
-    else:
-        return False
-
 def checkCollision(character, object):
     hyp = 0
     offset = py.Vector2(y.pos[0]+y.size[0]/2, y.pos[1]+y.size[1]/2)
@@ -749,8 +799,10 @@ def getNearestEnemieChar(start):
         return characters[minDist[1]]
 
 def mindTransport(start, target):
-    characters[target.seq].team = 0
-    characters[start.seq].team = 1
+    if start is not None and target is not None:
+        oldChar = target
+        characters[characters.index(target)] = start
+        characters[characters.index(start)] = oldChar
 
 def die():
     global playing
@@ -805,7 +857,7 @@ def reset():
     global levelText
     global barriers
     global characters
-    global spawnPoints
+    global nests
     global projectiles
     global baseSpeed
     global towers
@@ -824,16 +876,18 @@ def reset():
     characters = []
     projectiles = []
     barriers = []
-    spawnPoints = []
+    nests = []
     towers = []
 
     pos = (WINDOWWIDTH/2, WINDOWHEIGHT/2)
     characters.append(character(pos, 0, oldWeapon, oldArmor, baseSpeed, True))
 
     pos = (ra.randrange(0, WINDOWWIDTH), ra.randrange(0, WINDOWHEIGHT))
+    team = 1
+    nests.append(nest(pos, team))    
 
     for x in generatePointsAroundDot(pos, 2, 10):
-        spawnPoints.append(spawnPoint(x.pos, 1))
+        nests[0].append(spawnPoint(x.pos, team))
 
 # Initialsation
 
@@ -1184,10 +1238,15 @@ try:
                             logging.warning("Character not deletet")
 
             # Draws all objects and handels object specific funktions
-            for x in spawnPoints:
+            for x in nests:
                 x.draw(cordOffset)
-                if waveCooldown <= 0:
-                    x.spawn()
+                x.attack()
+
+                for y in x.members:
+                    y.draw(cordOffset)
+
+                    if waveCooldown <= 0:
+                        y.spawn()
 
             for x in barriers:
                 x.draw(cordOffset)
@@ -1287,7 +1346,6 @@ except:
 
 # Doing final cleanup
 finally:
-
     # Stops all pygame modules and closes all windows
     py.quit()
     # Prints end of log
