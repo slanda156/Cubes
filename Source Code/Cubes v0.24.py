@@ -528,28 +528,6 @@ class character:
 
         self.cooldown = self.maxCooldown
 
-class sliderWidget:
-    def __init__(self, color1, color2, pos, size, surface):
-        self.color1 = color1
-        self.color2 = color2
-        self.pos1 = pos
-        self.size = size
-        self.surface = surface
-
-    def draw(self, var, maxVar, pos):
-        self.pos1 = pos
-        self.pos2 = (pos[0]*0.9, pos[1]*0.9)
-        self.size2 = (self.size[0]*0.8, self.size[0]*0.8)
-        self.var = var
-        self.max = maxVar
-
-        py.draw.rect(self.surface, self.color1, (self.pos1[0], self.pos1[1], self.size[0], self.size[1]))
-        py.draw.rect(self.surface, self.color2, (self.pos2[1]+self.size2[1]/2, self.pos2[1]+self.size2[1]/2, self.size2[0], self.size2[1]))
-        
-        i = self.var / self.max
-
-        py.draw.rect(gamesurf, RED, (self.pos2[1]+self.size2[1]/2, self.pos2[1]+self.size2[1]/2, int(self.size2[0]*i), self.size2[1]))
-
 class textWidget:
     def __init__(self, font, color, pos, surface):
         self.font = font
@@ -1297,9 +1275,6 @@ try:
             resourcesText.draw(f"Resources: {round(characters[char].resources, 1)}")
                     
             equippedItemIconText.draw(f"{items[0].displayName}: {characters[char].inventory.get(items[0].name).amount}")
-
-            #reloadSlider = sliderWidget(LIGHTGREY, GREY, (180, 20), (50, 20), gamesurf)
-            #reloadSlider.draw(characters[char].maxCooldown, characters[char].cooldown, reloadSlider.pos1)
 
             for x in characters[char].effect:
                 effectIconText.icon = images.get(x.type)
