@@ -1,3 +1,4 @@
+import logging
 #from damageTypes import damageTypes
 
 upgradeNum = 6
@@ -5,6 +6,7 @@ upgradeNum = 6
 upgrades = []
 
 def initUpgrade():
+    logging.info("Loading upgrades")
     for i in range(upgradeNum):
         upgrades.append(upgrade(i))
 

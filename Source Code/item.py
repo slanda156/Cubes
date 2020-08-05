@@ -1,8 +1,11 @@
+import logging
+
 itemNum = 1
 
 items = []
 
 def initItem():
+    logging.info("Loading items")
     for i in range(itemNum):
         items.append(item(i))
 

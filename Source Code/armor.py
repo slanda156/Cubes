@@ -1,3 +1,4 @@
+import logging
 from damageTypes import damageTypes
 
 armorNum = 3
@@ -5,6 +6,7 @@ armorNum = 3
 armors = []
 
 def initArmor():
+    logging.info("Loading armor")
     for i in range(armorNum):
         armors.append(armor(i))
 
