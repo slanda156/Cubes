@@ -236,7 +236,7 @@ class spawnPoint:
                 logging.info("Spawning character")
 
                 # Spawning character
-                characters.append(character(self.pos, self.team, allowedWeapons[weaponIn], armors[armorIn], baseSpeed))
+                characters.append(character(self.pos, self, self.team, allowedWeapons[weaponIn], armors[armorIn], baseSpeed))
 
                 self.cooldown = ra.randint(self.minCooldown, self.maxCooldown)
             else:
@@ -441,17 +441,22 @@ class character:
 
         if self.controlled:
             self.target = py.mouse.get_pos() + offset
+
         elif calcDist(self.pos, characters[findPlayerChar()].pos) <= 1500:
             self.target = characters[findPlayerChar()].pos
+
+            if not self.controlled:
+                self.dir = py.Vector2(self.target[0]-self.pos[0], self.target[1]-self.pos[1])
+                self.ai()
+
         else:
             self.idle()
-
+        
         self.dir = py.Vector2(self.target[0]-self.pos[0], self.target[1]-self.pos[1])
-
-        if not self.controlled:
-            self.ai()
-
-        self.dir.scale_to_length(30)
+        try:
+            self.dir.scale_to_length(30)
+        except:
+            logging.warning("Cannot scale a vector with zero length")
 
         for x in self.effect:
             if x.duration > 0:
@@ -466,8 +471,45 @@ class character:
         self.cooldown -= time
 
     def idle(self):
-        self.target = self.origine.pos
-        
+        # Check how far away the origine is
+        if calcDist(self.pos, self.origine.pos) >= 250:
+            # Set origine as target
+            self.target = self.origine.pos
+
+        elif calcDist(self.pos ,self.target) < 250:
+            # Get x & y cordinates
+            a = self.pos[0]
+            b = self.pos[1]
+            # Generate vector out of position
+            target = py.Vector2(a, b)
+            # Rotate vector
+            target = target.rotate(1)
+
+        # Generate direction to move
+        self.dir = py.Vector2(self.target[0]-self.pos[0], self.target[1]-self.pos[1])
+
+        self.dir.scale_to_length(int(self.movementSpeed * time))
+
+        if not checkList(self.effect, "shocked"):
+            if calcDist(self.pos, self.target) > (self.weapon.range/2):
+                if self.boost > 0 and calcDist(self.pos, self.target) > self.weapon.range:
+                    self.dir.scale_to_length(int((self.movementSpeed * 2) * time))
+                    self.boost -= 20
+                else:
+                    self.boost += 10
+
+                self.pos[0] += int(self.dir[0])
+                self.pos[1] += int(self.dir[1])
+
+            else:
+                if self.boost > 0 and calcDist(self.pos, self.target) < (self.weapon.range/3):
+                    self.dir.scale_to_length(int((self.movementSpeed * 2) * time))
+                    self.boost -= 20
+                else:
+                    self.boost += 10
+
+                self.pos[0] -= int(self.dir[0])
+                self.pos[1] -= int(self.dir[1])
 
     def ai(self):
         if not checkList(self.effect, "shocked"):
@@ -1044,8 +1086,8 @@ try:
                 elif event.type == py.MOUSEBUTTONDOWN:
                     # Teleport to mouse position and sets effect
                     if event.button == 3 and characters[char].charge >= 100:
-                        characters[char].pos[0] = py.mouse.get_pos()[0]
-                        characters[char].pos[1] = py.mouse.get_pos()[1]
+                        characters[char].pos[0] = py.mouse.get_pos()[0] - cordOffset[0]
+                        characters[char].pos[1] = py.mouse.get_pos()[1] - cordOffset[1]
 
                         characters[char].effect.append(effect("shocked", 1.5, 0, (64, 56, 201)))
                         characters[char].effectDuration = 2.5
