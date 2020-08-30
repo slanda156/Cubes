@@ -24,7 +24,7 @@ cordOffset = py.Vector2(0, 0)
 WINDOWWIDTH = 2040
 WINDOWHEIGHT = int((WINDOWWIDTH/QUALITY[0])*QUALITY[1])
 
-version = "0.24"
+version = "0.25"
 
 # Sets the logging filter
 t = ti.localtime()
