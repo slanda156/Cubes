@@ -1,4 +1,4 @@
-<h1>Cubes v0.24</h1>
+<h1>Cubes v0.25</h1>
 
 <h2>Installation</h2>
 <ol>
@@ -12,6 +12,15 @@
 <li>Search for the newes version and select it</li>
 <li>Follow the installation instructions</li>
 </ol>
+
+<h2>Changelog</h2>
+<ul>
+<li>New light system</li>
+<li>New vison system</li>
+<li>Vision is based on light</li>
+<li>Open world</li>
+<li>Nestes spawn in groups randomly</li>
+</ul>
 
 <h2>Controls</h2>
 <table>

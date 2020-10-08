@@ -28,11 +28,18 @@ version = "0.25"
 
 # Sets the logging filter
 t = ti.localtime()
-currentTime = ti.strftime("%H_%M_%S", t)
 startTime = ti.time()
-logging.basicConfig(filename=f"log_{currentTime}.log", level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler("log.log", mode='w'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
 
-logging.info(f"Starting, version: {version}")
+logger.info(f"Starting, version: {version}")
 
 # Define Colors
 BLACK = (0, 0, 0)
@@ -44,6 +51,7 @@ RED = (255, 0, 0)
 LIGHTRED = (230, 95, 57)
 BLUE = (0, 0, 255)
 GREEN = (0, 255, 0)
+ORANGE = (253, 204, 85)
 ERROCOLOR = (255, 0, 102)
 
 # Define Fonts
@@ -82,6 +90,7 @@ projectiles = []
 barriers = []
 dots = []
 nests = []
+lights = []
 
 downTriangle = [py.Vector2(0, 0), py.Vector2(20, 0), py.Vector2(10, 10)]
 upTriangle = [py.Vector2(0, 10), py.Vector2(20, 10), py.Vector2(10, 0)]
@@ -233,7 +242,7 @@ class spawnPoint:
                 armorIn = ra.randrange(0, armorNum)
 
                 # Debug info
-                logging.info("Spawning character")
+                logger.info("Spawning character")
 
                 # Spawning character
                 characters.append(character(self.pos, self, self.team, allowedWeapons[weaponIn], armors[armorIn], baseSpeed))
@@ -309,9 +318,8 @@ class tower:
             if x.duration <= 0:
                 try:
                     del self.effect[self.effect.index(x)]
-                    logging.info("Removing effect")
                 except:
-                    logging.warning("Effect not deletet")
+                    logger.warning("Effect not deletet")
 
         self.target = py.mouse.get_pos() - offset
 
@@ -364,15 +372,17 @@ class character:
         self.controlled = controlled
         self.pos = [pos[0], pos[1]]
         self.origine = origine
-        self.team = team
+        self.destiny = None
         self.type = "player"
         self.weapon = weapon
         self.armor = armor
+        self.team = team
         self.cooldown = 0.1
         self.maxCooldown = self.weapon.reloadTime / 100
-        self.target = [0, 0]
+        self.target = py.Vector2(0, 0)
         self.level = 1
         self.xp = 0
+        self.visualRange = 500
         self.resources = 0
         self.upgrades = []
         self.maxCharge = 200
@@ -437,32 +447,38 @@ class character:
                 try:
                     del self.effect[self.effect.index(x)]
                 except:
-                    logging.warning("Effect not deletet")
+                    logger.warning("Effect not deletet")
 
         if self.controlled:
             self.target = py.mouse.get_pos() + offset
+            
 
-        elif calcDist(self.pos, characters[findPlayerChar()].pos) <= 1500:
-            self.target = characters[findPlayerChar()].pos
+        elif not self.controlled:
+            target = characters[findPlayerChar()]
 
-            if not self.controlled:
-                self.dir = py.Vector2(self.target[0]-self.pos[0], self.target[1]-self.pos[1])
-                self.ai()
+            if canSeeTarget(self, target):
+                self.target = target
+                if self.destiny is None:
+                    self.destiny = self.target.pos
 
-        else:
-            self.idle()
-        
-        self.dir = py.Vector2(self.target[0]-self.pos[0], self.target[1]-self.pos[1])
-        try:
-            self.dir.scale_to_length(30)
-        except:
-            logging.warning("Cannot scale a vector with zero length")
+            self.ai()
 
         for x in self.effect:
             if x.duration > 0:
                 x.duration -= time
 
         py.draw.circle(gamesurf, (200, 200, 200), (int(self.newPos[0]), int(self.newPos[1])), self.radius)
+
+        if type(self.target) is py.Vector2:
+            target = self.target
+        else:
+            target = self.target.pos
+
+        self.dir = py.Vector2(target[0]-self.pos[0], target[1]-self.pos[1])
+        try:
+            self.dir.scale_to_length(30)
+        except:
+            logger.warning("Cannot scale a vector with zero length")
 
         py.draw.line(gamesurf, self.weapon.color, self.newPos, (self.newPos + self.dir), int(self.radius/4))
 
@@ -474,9 +490,9 @@ class character:
         # Check how far away the origine is
         if calcDist(self.pos, self.origine.pos) >= 250:
             # Set origine as target
-            self.target = self.origine.pos
+            self.target = self.origine
 
-        elif calcDist(self.pos ,self.target) < 250:
+        elif calcDist(self.pos ,self.target.pos) < 250:
             # Get x & y cordinates
             a = self.pos[0]
             b = self.pos[1]
@@ -485,59 +501,56 @@ class character:
             # Rotate vector
             target = target.rotate(1)
 
-        # Generate direction to move
-        self.dir = py.Vector2(self.target[0]-self.pos[0], self.target[1]-self.pos[1])
+            self.destiny = target
 
-        self.dir.scale_to_length(int(self.movementSpeed * time))
+            self.move()
 
-        if not checkList(self.effect, "shocked"):
-            if calcDist(self.pos, self.target) > (self.weapon.range/2):
-                if self.boost > 0 and calcDist(self.pos, self.target) > self.weapon.range:
-                    self.dir.scale_to_length(int((self.movementSpeed * 2) * time))
-                    self.boost -= 20
+    def move(self):
+        if self.destiny is not None:
+            if calcDist(self.pos, self.destiny) > 10:
+                self.dir = py.Vector2(self.destiny[0]-self.pos[0], self.destiny[1]-self.pos[1])
+
+                try:
+                    self.dir.scale_to_length(int(self.movementSpeed * time))
+                except:
+                    logger.warning("Cannot scale a vector with zero length")
+
+                if calcDist(self.pos, self.destiny) > (self.weapon.range/2):
+                    if self.boost > 0 and calcDist(self.pos, self.destiny) > self.weapon.range:
+                        self.dir.scale_to_length(int((self.movementSpeed * 2) * time))
+                        self.boost -= 20
+                    else:
+                        self.boost += 10
+
+                    self.pos[0] += int(self.dir[0])
+                    self.pos[1] += int(self.dir[1])
+
                 else:
-                    self.boost += 10
+                    if self.boost > 0 and calcDist(self.pos, self.destiny) < (self.weapon.range/3):
+                        self.dir.scale_to_length(int((self.movementSpeed * 2) * time))
+                        self.boost -= 20
+                    else:
+                        self.boost += 10
 
-                self.pos[0] += int(self.dir[0])
-                self.pos[1] += int(self.dir[1])
-
+                    self.pos[0] -= int(self.dir[0])
+                    self.pos[1] -= int(self.dir[1])
             else:
-                if self.boost > 0 and calcDist(self.pos, self.target) < (self.weapon.range/3):
-                    self.dir.scale_to_length(int((self.movementSpeed * 2) * time))
-                    self.boost -= 20
-                else:
-                    self.boost += 10
-
-                self.pos[0] -= int(self.dir[0])
-                self.pos[1] -= int(self.dir[1])
+                self.destiny = None
+        else:
+            self.idle()
 
     def ai(self):
         if not checkList(self.effect, "shocked"):
+            if canSeeTarget(self, self.target):
+                self.target = characters[findPlayerChar()]
+                if self.destiny is None:
+                    self.destiny = self.target.pos
+
             if self.cooldown <= 0:
-                if calcDist(self.pos, self.target) < self.weapon.range:
+                if calcDist(self.pos, self.target.pos) < self.weapon.range:
                     self.shoot()
 
-            self.dir.scale_to_length(int(self.movementSpeed * time))
-
-            if calcDist(self.pos, self.target) > (self.weapon.range/2):
-                if self.boost > 0 and calcDist(self.pos, self.target) > self.weapon.range:
-                    self.dir.scale_to_length(int((self.movementSpeed * 2) * time))
-                    self.boost -= 20
-                else:
-                    self.boost += 10
-
-                self.pos[0] += int(self.dir[0])
-                self.pos[1] += int(self.dir[1])
-
-            else:
-                if self.boost > 0 and calcDist(self.pos, self.target) < (self.weapon.range/3):
-                    self.dir.scale_to_length(int((self.movementSpeed * 2) * time))
-                    self.boost -= 20
-                else:
-                    self.boost += 10
-
-                self.pos[0] -= int(self.dir[0])
-                self.pos[1] -= int(self.dir[1])
+            self.move()
 
     def getHit(self, weapon):
         self.effectDuration = weapon.effectDuration
@@ -572,40 +585,55 @@ class character:
         py.draw.rect(gamesurf, RED, (pos[0]-18, pos[1]-4, int(36*i), 8))
 
     def shoot(self):
-        appendProjectiles(self.pos, py.Vector2(self.target[0]-self.pos[0], self.target[1]-self.pos[1]), self.weapon.power, self.weapon, self.team, self.accuracy)
+        if type(self.target) is py.Vector2:
+            target = self.target
+        else:
+            target = self.target.pos
+        
+        appendProjectiles(self.pos, py.Vector2(target[0]-self.pos[0], target[1]-self.pos[1]), self.weapon.power, self.weapon, self.team, self.accuracy)
 
         self.cooldown = self.maxCooldown
 
+class light:
+    def __init__(self, pos, color, intensity, sprit):
+        self.pos = pos
+        self.color = color
+        self.intensity = intensity
+        self.sprit = sprit
+
+    def draw(self, offset):
+        self.newPos = self.pos - offset
+        self.newPos = (int(self.newPos[0]), int(self.newPos[1]))
+
+        gamesurf.blit(self.sprit, self.newPos)
+
 class textWidget:
-    def __init__(self, font, color, pos, surface):
+    def __init__(self, font, color, pos):
         self.font = font
         self.color = color
         self.pos = pos
-        self.surface = surface
 
     def draw(self, text):
         widget = self.font.render(str(text), True, self.color)
 
-        self.surface.blit(widget, self.pos)
+        gamesurf.blit(widget, self.pos)
 
 class icon:
-    def __init__(self, sprit, pos, surface):
+    def __init__(self, sprit, pos):
         self.sprit = sprit
         self.pos = pos
-        self.surface = surface
 
     def draw(self):
-        py.Surface.blit(self.sprit, self.pos)
+        gamesurf.blit(self.sprit, self.pos)
 
 class iconAndText:
-    def __init__(self, sprit, scale, font, textColor, text, pos, surface):
+    def __init__(self, sprit, scale, font, textColor, text, pos):
         self.sprit = sprit
         self.scale = scale
         self.font = font
         self.textColor = textColor
         self.text = text
         self.pos = pos
-        self.surface = surface
 
     def draw(self, text=None):
         if text is not None:
@@ -614,8 +642,8 @@ class iconAndText:
         widget = self.font.render(str(self.text), True, self.textColor)
 
         if self.sprit is not None:
-            py.Surface.blit(self.sprit, self.pos)
-        self.surface.blit(widget, (self.pos[0]+50, self.pos[1]))
+            gamesurf.blit(self.sprit, self.pos)
+        gamesurf.blit(widget, (self.pos[0]+50, self.pos[1]))
 
 # Declare Functions
 
@@ -719,7 +747,7 @@ def checkHits(projectiles, objects):
                     try:
                         del projectiles[projectiles.index(x)]
                     except:
-                        logging.warning("Projectile not deletet")
+                        logger.warning("Projectile not deletet")
 
 def offsetTrajectory(start, splatter):
     start[0] = int(start[0])
@@ -771,6 +799,18 @@ def positiveNum(number):
 
 def sculpt(pos, texture, color1, color2, color3, scale):
     pass
+
+def canSeeTarget(char, target):
+    global lights
+
+    if type(target) is not list:
+        target = target.pos 
+
+    if calcDist(char.pos, target) < 1500:
+        return True
+
+    else:
+        return False
 
 def getNearestChar(start):
     distance = []
@@ -875,7 +915,7 @@ def generatePointsAroundDot(pos, minVar, maxVar):
     return points
 
 def reset():
-    logging.info("Reset")
+    logger.info("Reset")
 
     gamesurf.fill(BLACK)
     py.event.clear()
@@ -905,12 +945,16 @@ def reset():
     nests = []
     towers = []
 
+    pos = (500, 200)
+    lights.append(light(pos, ORANGE, 10, images.get("lamp1.png")))
+
     pos = (WINDOWWIDTH/2, WINDOWHEIGHT/2)
     characters.append(character(pos, None, 0, oldWeapon, oldArmor, baseSpeed, True))
 
     pos = (ra.randrange(0, WINDOWWIDTH), ra.randrange(0, WINDOWHEIGHT))
     team = 1
     nests.append(nest(pos, team))    
+
 
     for x in generatePointsAroundDot(pos, 2, 10):
         nests[0].append(spawnPoint(x.pos, team))
@@ -950,7 +994,7 @@ for x in imageNames:
 # Resets all variables
 reset()
 
-logging.info(f"Loaded after: {round(ti.time()-startTime, 3)} s")
+logger.info(f"Loaded after: {round(ti.time()-startTime, 3)} s")
 
 try:
     while running:
@@ -983,24 +1027,24 @@ try:
         downPos2 = ((WINDOWWIDTH/2)-100, (WINDOWHEIGHT/4))
 
         # Define widgets
-        armorText = textWidget(buttonFont, armors[0].color, ((WINDOWWIDTH/2)-70, (WINDOWHEIGHT/4)+15), gamesurf)
-        weaponText = textWidget(buttonFont, weapons[0].color, ((WINDOWWIDTH/2)-70, (WINDOWHEIGHT/4)+90), gamesurf)
-        quitText = textWidget(buttonFont, BLACK, ((WINDOWWIDTH/2)-35, (WINDOWHEIGHT/3)+100), gamesurf)
-        titletext = textWidget(title2Font, (220, 220, 220), (WINDOWWIDTH/2-90, 150), gamesurf)
-        deadText = textWidget(titleFont, RED, (WINDOWWIDTH/2-100, WINDOWHEIGHT*0.2), gamesurf)
-        playText = textWidget(buttonFont, BLACK, ((WINDOWWIDTH/2)-30, (WINDOWHEIGHT/3)+50), gamesurf)
-        menuText = textWidget(buttonFont, BLACK, (menuButtonPos[0]+(menuButtonSize[0]*0.1), menuButtonPos[1]), gamesurf)
-        resetText = textWidget(buttonFont, BLACK, (resetButtonPos[0]+(resetButtonSize[0]*0.22), resetButtonPos[1]), gamesurf)
-        pauseText = textWidget(titleFont, WHITE, (WINDOWWIDTH/2-100, WINDOWHEIGHT*0.2), gamesurf)
-        fpsText = textWidget(buttonFont, GREEN, ((WINDOWWIDTH/2), 20), gamesurf)
-        xpText = textWidget(buttonFont, GREEN, (20, 80), gamesurf)
-        levelText = textWidget(buttonFont, GREEN, (20, 50), gamesurf)
-        healthText = textWidget(buttonFont, LIGHTRED, (20, 20), gamesurf)
-        resourcesText = textWidget(buttonFont, GREEN, ((WINDOWWIDTH-200), 20), gamesurf)
-        waveCooldownText = textWidget(titleFont, GREEN, (WINDOWWIDTH/2, 20), gamesurf)
+        armorText = textWidget(buttonFont, armors[0].color, ((WINDOWWIDTH/2)-70, (WINDOWHEIGHT/4)+15))
+        weaponText = textWidget(buttonFont, weapons[0].color, ((WINDOWWIDTH/2)-70, (WINDOWHEIGHT/4)+90))
+        quitText = textWidget(buttonFont, BLACK, ((WINDOWWIDTH/2)-35, (WINDOWHEIGHT/3)+100))
+        titletext = textWidget(title2Font, (220, 220, 220), (WINDOWWIDTH/2-90, 150))
+        deadText = textWidget(titleFont, RED, (WINDOWWIDTH/2-100, WINDOWHEIGHT*0.2))
+        playText = textWidget(buttonFont, BLACK, ((WINDOWWIDTH/2)-30, (WINDOWHEIGHT/3)+50))
+        menuText = textWidget(buttonFont, BLACK, (menuButtonPos[0]+(menuButtonSize[0]*0.1), menuButtonPos[1]))
+        resetText = textWidget(buttonFont, BLACK, (resetButtonPos[0]+(resetButtonSize[0]*0.22), resetButtonPos[1]))
+        pauseText = textWidget(titleFont, WHITE, (WINDOWWIDTH/2-100, WINDOWHEIGHT*0.2))
+        fpsText = textWidget(buttonFont, GREEN, ((WINDOWWIDTH/2), 20))
+        xpText = textWidget(buttonFont, GREEN, (20, 80))
+        levelText = textWidget(buttonFont, GREEN, (20, 50))
+        healthText = textWidget(buttonFont, LIGHTRED, (20, 20))
+        resourcesText = textWidget(buttonFont, GREEN, ((WINDOWWIDTH-200), 20))
+        waveCooldownText = textWidget(titleFont, GREEN, (WINDOWWIDTH/2, 20))
 
-        effectIconText = iconAndText(None, 5, effectFont, ERROCOLOR, "None", (40, WINDOWHEIGHT-80), gamesurf)
-        equippedItemIconText = iconAndText(None, 2, itemFont, GREEN, "None", (WINDOWWIDTH-180, 80), gamesurf)
+        effectIconText = iconAndText(None, 5, effectFont, ERROCOLOR, "None", (40, WINDOWHEIGHT-80))
+        equippedItemIconText = iconAndText(None, 2, itemFont, GREEN, "None", (WINDOWWIDTH-180, 80))
 
         # Main event loop
         for event in py.event.get():
@@ -1227,9 +1271,8 @@ try:
                     if x.team != 0:
                         try:
                             del characters[characters.index(x)]
-                            logging.info("Removing character")
                         except:
-                            logging.warning("Character not deletet")
+                            logger.warning("Character not deletet")
 
                 # Print remaining time
                 waveCooldownText.draw(round(waveCooldown, 1))
@@ -1248,7 +1291,7 @@ try:
                         try:
                             del projectiles[projectiles.index(x)]
                         except:
-                            logging.warning("Projectile not deletet")
+                            logger.warning("Projectile not deletet")
 
             # Check for dead characters and delets them
             for x in characters:
@@ -1259,9 +1302,8 @@ try:
                     else:
                         try:
                             del characters[characters.index(x)]
-                            logging.info("Removing character")
                         except:
-                            logging.warning("Character not deletet")
+                            logger.warning("Character not deletet")
 
             # Draws all objects and handels object specific funktions
             for x in nests:
@@ -1275,6 +1317,9 @@ try:
                         y.spawn()
 
             for x in barriers:
+                x.draw(cordOffset)
+
+            for x in lights:
                 x.draw(cordOffset)
 
             for x in towers:
@@ -1302,7 +1347,7 @@ try:
                     try:
                         del projectiles[projectiles.index(x)]
                     except:
-                        logging.warning("Projectile not deletet")
+                        logger.warning("Projectile not deletet")
 
             # Display the hud
             for x in towers:
@@ -1372,4 +1417,4 @@ finally:
     # Stops all pygame modules and closes all windows
     py.quit()
     # Prints end of log
-    logging.info(f"Stopping after: {round(ti.time()-startTime, 3)} s")
+    logger.info(f"Stopping after: {round(ti.time()-startTime, 3)} s")
