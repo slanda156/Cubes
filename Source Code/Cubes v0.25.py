@@ -30,7 +30,7 @@ version = "0.25"
 t = ti.localtime()
 startTime = ti.time()
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
     handlers=[
         logging.FileHandler("log.log", mode='w'),
@@ -95,6 +95,7 @@ lights = []
 downTriangle = [py.Vector2(0, 0), py.Vector2(20, 0), py.Vector2(10, 10)]
 upTriangle = [py.Vector2(0, 10), py.Vector2(20, 10), py.Vector2(10, 0)]
 
+enemyPower = 1
 hudMode = 0
 waveCooldown = 0
 oldLevel = 0
@@ -115,17 +116,6 @@ plasma = damageTypes.get("plasma")
 
 # Define Classes
 
-class point:
-    def __init__(self, pos):
-        self.pos = pos
-
-    def draw(self, offset):
-        self.newPos = self.pos - offset
-
-        self.newPos = (int(self.newPos[0]), int(self.newPos[1]))
-
-        py.draw.circle(gamesurf, ERROCOLOR, self.newPos, 10)
-
 class barrier:
     def __init__(self, pos, size, death=False):
         self.pos = pos
@@ -145,36 +135,59 @@ class barrier:
 class nest:
     def __init__(self, pos, team):
         self.pos = pos
-        self.members = []
+        self.spawns = []
         self.hearts = []
-        self.maxVal = 7
+        self.maxSpawns = 7
+        self.maxHearts = 1
         self.team = team
-    
-    def append(self, member):
-        self.members.append(member)
-        self.size = len(self.members)
 
-        if self.size >= self.maxVal:
-            self.maxVal += 2
-            i = 0
-            a = ra.randrange(0, self.size - 1)
-            
-            while i < 2:
-                del self.members[a]
-                self.size = len(self.members)
-                i += 1
-            
-            self.hearts.append(heart(self.pos, self.team))
+    def resize(self):
+        if len(self.hearts)-1 < self.maxHearts:
+            i = ra.randrange(1, 1001)
+            # Check if it should spawn
+            if i <= 1 + enemyPower/5:
+                # Generate position
+                x = ra.randint(-20*self.maxHearts, 20*self.maxHearts)
+                y = ra.randint(-20*self.maxHearts, 20*self.maxHearts)
+                pos = py.Vector2(x, y)
+                pos += self.pos
+                # Generate heart
+                localheart = heart(pos, self.team)
+                # Add it to the lsist
+                self.hearts.append(localheart)
 
-    def attack(self):
-        for x in self.hearts:
-            if x.cooldown <= 0:
-                x.attack()
+        if len(self.spawns)-1 < self.maxSpawns:
+            i = ra.randrange(1, 1001)
+            # Check if it should spawn
+            if i <= 10 + enemyPower/10:
+                # Generate position
+                x = ra.randint(-15*self.maxSpawns, 15*self.maxSpawns)
+                y = ra.randint(-15*self.maxSpawns, 15*self.maxSpawns)
+                pos = py.Vector2(x, y)
+                pos += self.pos
+                # Generate spawns
+                spawns = spawnPoint(pos, self.team)
+                # Check distance to other spawns and hearts
+                retry = True
+                for x in self.spawns:
+                    if calcDist(pos, x.pos) <= 80:
+                        retry = False
+                    
+                for x in self.hearts:
+                    if calcDist(pos, x.pos) <= 100:
+                        retry = False
+
+                if retry:
+                    # Add it to the lsist
+                    self.spawns.append(spawns)
 
     def draw(self, offset):
-        self.newPos = self.pos - offset
-        self.newPos = (int(self.newPos[0]), int(self.newPos[1]))
-        pass
+        newPos = self.pos - offset
+        newPos = (int(newPos[0]), int(newPos[1]))
+
+        # Draw lights for all hearts
+        for x in self.hearts:
+            x.light.draw(offset)
 
 class heart:
     def __init__(self, pos, team):
@@ -182,43 +195,52 @@ class heart:
         self.team = team
         self.maxCooldown = 120
         self.cooldown = self.maxCooldown
-        self.dot = point(self.pos)
+        self.light = light(self.pos, RED, 3)
 
     def atack(self):
         pass
 
     def draw(offset):
-        self.newPos = self.pos - offset
-        self.newPos = (int(self.newPos[0]), int(self.newPos[1]))
+        newPos = self.pos - offset
+        newPos = (int(newPos[0]), int(newPos[1]))
 
         self.cooldown -= time
 
         if self.cooldown <= 0:
             self.cooldown = 0
 
-        self.dot.draw(offset)
+        py.draw.circle(gamesurf, RED, newPos, 20)
 
 class spawnPoint:
     def __init__(self, pos, team):
         self.pos = pos
         self.team = team
+        self.units = []
+        self.level = 1
         self.maxCooldown = 7
         self.minCooldown = 4
         self.cooldown = self.maxCooldown
 
     def draw(self, offset):
-        self.newPos = (int(self.pos[0] - offset[0]), int(self.pos[1] - offset[1]))
-        
+        self.level += time / 60
 
-        py.draw.rect(gamesurf, GREY, (self.newPos[0]-30, self.newPos[1]-30, 60, 60))
-        py.draw.rect(gamesurf, GREEN, (self.newPos[0]-25, self.newPos[1]-25, 50, 50))
+        newPos = (self.pos[0] - offset[0], self.pos[1] - offset[1])
+        newPos = (int(newPos[0]), int(newPos[1]))
+
+        py.draw.rect(gamesurf, GREY, (newPos[0]-30, newPos[1]-30, 60, 60))
+        py.draw.rect(gamesurf, GREEN, (newPos[0]-25, newPos[1]-25, 50, 50))
 
     def spawn(self):
-        if self.team != 0 and len(characters) < maxChar + 1:
+        maxUnits = enemyPower // 5
+
+        if maxUnits <= 0:
+            maxUnits = 1
+
+        if self.team != 0 and len(self.units)-1 <= maxUnits:
             if self.cooldown <= 0:
                 allowedWeapons = []
                 allowedWeaponTypes = []
-                if characters[findPlayerChar()].level // 1 >= 1:
+                if self.level // 1 >= 1:
                     allowedWeaponTypes.append(physical)
 
                 if characters[findPlayerChar()].level // 3 >= 1:
@@ -242,10 +264,10 @@ class spawnPoint:
                 armorIn = ra.randrange(0, armorNum)
 
                 # Debug info
-                logger.info("Spawning character")
+                logger.debug("Spawning character")
 
                 # Spawning character
-                characters.append(character(self.pos, self, self.team, allowedWeapons[weaponIn], armors[armorIn], baseSpeed))
+                #characters.append(character(self.pos, self, self.team, allowedWeapons[weaponIn], armors[armorIn], baseSpeed))
 
                 self.cooldown = ra.randint(self.minCooldown, self.maxCooldown)
             else:
@@ -370,16 +392,17 @@ class tower:
 class character:
     def __init__(self, pos, origine, team, weapon, armor, speed, controlled=False):
         self.controlled = controlled
-        self.pos = [pos[0], pos[1]]
+        self.pos = py.Vector2(pos[0], pos[1])
         self.origine = origine
         self.destiny = None
         self.type = "player"
         self.weapon = weapon
         self.armor = armor
         self.team = team
+        self.visibility = 1
         self.cooldown = 0.1
         self.maxCooldown = self.weapon.reloadTime / 100
-        self.target = py.Vector2(0, 0)
+        self.target = self.origine
         self.level = 1
         self.xp = 0
         self.visualRange = 500
@@ -413,6 +436,16 @@ class character:
             self.movementSpeed = int(speed)
 
     def draw(self, offset):
+        # Get current brightness
+        lamps = getLights(self.pos)
+        b = 1
+        for x in lamps:
+            distance = calcDist(self.pos, x.pos)
+            brightness = x.getBrightnes(distance)
+            b *= brightness
+        # Calc current visiblity
+        self.visibility = 1 * b
+
         self.newPos = self.pos - offset
         self.newPos = (int(self.newPos[0]), int(self.newPos[1]))
 
@@ -452,8 +485,7 @@ class character:
         if self.controlled:
             self.target = py.mouse.get_pos() + offset
             
-
-        elif not self.controlled:
+        else:
             target = characters[findPlayerChar()]
 
             if canSeeTarget(self, target):
@@ -467,22 +499,27 @@ class character:
             if x.duration > 0:
                 x.duration -= time
 
-        py.draw.circle(gamesurf, (200, 200, 200), (int(self.newPos[0]), int(self.newPos[1])), self.radius)
+        py.draw.circle(gamesurf, (200, 200, 200), self.newPos, self.radius)
 
         if type(self.target) is py.Vector2:
             target = self.target
         else:
             target = self.target.pos
 
-        self.dir = py.Vector2(target[0]-self.pos[0], target[1]-self.pos[1])
+        lookDir = py.Vector2(target[0]-self.pos[0], target[1]-self.pos[1])
         try:
-            self.dir.scale_to_length(30)
+            lookDir.scale_to_length(30)
         except:
             logger.warning("Cannot scale a vector with zero length")
 
-        py.draw.line(gamesurf, self.weapon.color, self.newPos, (self.newPos + self.dir), int(self.radius/4))
+        py.draw.line(gamesurf, self.weapon.color, self.newPos, (self.newPos + lookDir), int(self.radius/4))
 
-        py.draw.circle(gamesurf, self.armor.color, (int(self.newPos[0]), int(self.newPos[1])), int(self.radius/3))
+        py.draw.circle(gamesurf, self.armor.color, self.newPos, int(self.radius/3))
+
+        if self.target is not None:
+            pos = self.target - offset
+            newpos = (int(pos[0]), int(pos[1]))
+            py.draw.circle(gamesurf, ERROCOLOR, newpos, 20)
 
         self.cooldown -= time
 
@@ -492,7 +529,7 @@ class character:
             # Set origine as target
             self.target = self.origine
 
-        elif calcDist(self.pos ,self.target.pos) < 250:
+        elif calcDist(self.pos ,self.origine.pos) < 250:
             # Get x & y cordinates
             a = self.pos[0]
             b = self.pos[1]
@@ -500,53 +537,53 @@ class character:
             target = py.Vector2(a, b)
             # Rotate vector
             target = target.rotate(1)
-
+            # Set current destiny to target
             self.destiny = target
-
+            # Move to target
             self.move()
 
     def move(self):
         if self.destiny is not None:
+            x = int(self.destiny[0])
+            y = int(self.destiny[1])
+            self.destiny = py.Vector2(x,y)
+
             if calcDist(self.pos, self.destiny) > 10:
-                self.dir = py.Vector2(self.destiny[0]-self.pos[0], self.destiny[1]-self.pos[1])
+                localDir = py.Vector2(self.destiny[0]-self.pos[0], self.destiny[1]-self.pos[1])
 
                 try:
-                    self.dir.scale_to_length(int(self.movementSpeed * time))
+                    localDir.scale_to_length(int(self.movementSpeed * time))
                 except:
                     logger.warning("Cannot scale a vector with zero length")
 
                 if calcDist(self.pos, self.destiny) > (self.weapon.range/2):
                     if self.boost > 0 and calcDist(self.pos, self.destiny) > self.weapon.range:
-                        self.dir.scale_to_length(int((self.movementSpeed * 2) * time))
+                        localDir.scale_to_length(int((self.movementSpeed * 2) * time))
                         self.boost -= 20
                     else:
                         self.boost += 10
 
-                    self.pos[0] += int(self.dir[0])
-                    self.pos[1] += int(self.dir[1])
+                    self.pos[0] += int(localDir[0])
+                    self.pos[1] += int(localDir[1])
 
                 else:
                     if self.boost > 0 and calcDist(self.pos, self.destiny) < (self.weapon.range/3):
-                        self.dir.scale_to_length(int((self.movementSpeed * 2) * time))
+                        localDir.scale_to_length(int((self.movementSpeed * 2) * time))
                         self.boost -= 20
                     else:
                         self.boost += 10
 
-                    self.pos[0] -= int(self.dir[0])
-                    self.pos[1] -= int(self.dir[1])
+                    self.pos[0] -= int(localDir[0])
+                    self.pos[1] -= int(localDir[1])
             else:
                 self.destiny = None
         else:
+            pass
             self.idle()
 
     def ai(self):
         if not checkList(self.effect, "shocked"):
-            if canSeeTarget(self, self.target):
-                self.target = characters[findPlayerChar()]
-                if self.destiny is None:
-                    self.destiny = self.target.pos
-
-            if self.cooldown <= 0:
+            if self.cooldown <= 0 and type(self.target) == character:
                 if calcDist(self.pos, self.target.pos) < self.weapon.range:
                     self.shoot()
 
@@ -586,26 +623,63 @@ class character:
 
     def shoot(self):
         if type(self.target) is py.Vector2:
-            target = self.target
+            localTarget = self.target
         else:
-            target = self.target.pos
+            localTarget = self.target.pos
         
-        appendProjectiles(self.pos, py.Vector2(target[0]-self.pos[0], target[1]-self.pos[1]), self.weapon.power, self.weapon, self.team, self.accuracy)
+        appendProjectiles(self.pos, py.Vector2(localTarget[0]-self.pos[0], localTarget[1]-self.pos[1]), self.weapon.power, self.weapon, self.team, self.accuracy)
 
         self.cooldown = self.maxCooldown
 
 class light:
-    def __init__(self, pos, color, intensity, sprit):
+    def __init__(self, pos, color, intensity, sprit=None):
         self.pos = pos
+        self.size = (64, 64)
+        self.center = py.Vector2(pos[0]+self.size[0]/2, pos[1]+self.size[1]/2)
         self.color = color
+        self.radius = intensity * 50
         self.intensity = intensity
-        self.sprit = sprit
+        self.sprit = sprit        
+
+        if sprit is not None:
+            # Rescale the image
+            self.sprit = py.transform.scale(sprit, self.size)
 
     def draw(self, offset):
-        self.newPos = self.pos - offset
-        self.newPos = (int(self.newPos[0]), int(self.newPos[1]))
+        newPos = self.pos - offset
+        newPos = (int(newPos[0]), int(newPos[1]))
 
-        gamesurf.blit(self.sprit, self.newPos)
+        newCenter = self.center - offset
+        newCenter = (int(newCenter[0]), int(newCenter[1]))
+
+        intensity = self.intensity * 10
+
+        i = 10
+        r = 0
+
+        while i > 0:
+            # Calc the radius
+            r = int((intensity * i) / 2)
+
+            # Create new color and scale it
+            newColor = scaleColor(self.color, 1-i/10)
+
+            # Draw circle with curent range and transparancy
+            py.draw.circle(gamesurf, newColor, newCenter, r)
+
+            # Reduce number of circles
+            i -= 0.1
+
+        # Check and draw sprit
+        if self.sprit is not None:
+            gamesurf.blit(self.sprit, newPos)
+
+    def getBrightnes(self, distance):
+        intensity = self.intensity * 10
+
+        b = ((1-distance)*2)/intensity
+
+        return b
 
 class textWidget:
     def __init__(self, font, color, pos):
@@ -755,6 +829,12 @@ def offsetTrajectory(start, splatter):
 
     return py.Vector2(ra.randint(start[0]-splatter, start[0]+splatter), ra.randint(start[1]-splatter, start[1]+splatter))
 
+def scaleColor(color, scale):
+    r = int(color[0] * scale)
+    g = int(color[1] * scale)
+    b = int(color[2] * scale)
+    return (r, g, b)
+
 def appendProjectiles(start, dierection, power, weapon, team, accuracy):
     if weapon.type == fire:
         i = ra.randrange(3, 5)
@@ -801,16 +881,18 @@ def sculpt(pos, texture, color1, color2, color3, scale):
     pass
 
 def canSeeTarget(char, target):
-    global lights
+    if type(target) is not py.Vector2:
+        # Check for visibility
+        if not target.visible > char.awareness:
+            return False
 
-    if type(target) is not list:
-        target = target.pos 
+        target = target.pos
 
-    if calcDist(char.pos, target) < 1500:
-        return True
-
-    else:
+    # Check distance
+    if calcDist(char.pos, target) > 1500:
         return False
+
+    return True
 
 def getNearestChar(start):
     distance = []
@@ -864,6 +946,16 @@ def getNearestEnemieChar(start):
 
         return characters[minDist[1]]
 
+def getLights(pos):
+    global lights
+    value = []
+
+    for x in lights:
+        if calcDist(x.pos, pos) < x.radius:
+            value.append(x)
+
+    return value
+
 def mindTransport(start, target):
     if start is not None and target is not None:
         oldChar = target
@@ -895,8 +987,8 @@ def generatePointsAroundDot(pos, minVar, maxVar):
     
         if len(points) > 1:
             for x in points:
-                if calcDist(x.pos, pos+offset) > 100:
-                    distance.append((calcDist(x.pos, pos+offset)))
+                if calcDist(x, pos+offset) > 100:
+                    distance.append((calcDist(x, pos+offset)))
                 
             for x in distance:
                 if minVal != 0:
@@ -907,10 +999,10 @@ def generatePointsAroundDot(pos, minVar, maxVar):
                     minVal = x
     
             if minVal > 50:
-                points.append(point(pos+offset))
+                points.append(pos+offset)
                 
         else:
-            points.append(point(pos+offset))
+            points.append(pos+offset)
     
     return points
 
@@ -953,11 +1045,7 @@ def reset():
 
     pos = (ra.randrange(0, WINDOWWIDTH), ra.randrange(0, WINDOWHEIGHT))
     team = 1
-    nests.append(nest(pos, team))    
-
-
-    for x in generatePointsAroundDot(pos, 2, 10):
-        nests[0].append(spawnPoint(x.pos, team))
+    nests.append(nest(pos, team))
 
 # Initialsation
 
@@ -1306,20 +1394,23 @@ try:
                             logger.warning("Character not deletet")
 
             # Draws all objects and handels object specific funktions
+            for x in lights:
+                x.draw(cordOffset)
+
             for x in nests:
                 x.draw(cordOffset)
-                x.attack()
+                x.resize()
 
-                for y in x.members:
+                for y in x.spawns:
                     y.draw(cordOffset)
 
                     if waveCooldown <= 0:
                         y.spawn()
 
-            for x in barriers:
-                x.draw(cordOffset)
+                for y in x.hearts:
+                    x.draw(cordOffset)
 
-            for x in lights:
+            for x in barriers:
                 x.draw(cordOffset)
 
             for x in towers:
@@ -1355,9 +1446,6 @@ try:
 
             for x in characters:
                 x.healthBar()
-
-            for x in dots:
-                x.draw(cordOffset)
 
             # Health text and bar
             healthText.draw(f"{round(characters[char].health, 1)}/{round(characters[char].maxHealth, 1)}")

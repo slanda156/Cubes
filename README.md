@@ -17,9 +17,10 @@
 <ul>
 <li>New light system</li>
 <li>New vison system</li>
-<li>Vision is based on light</li>
-<li>Open world</li>
-<li>Nestes spawn in groups randomly</li>
+<li>Bigger map</li>
+<li>Randomly spawned nests</li>
+<li>Nests have hearts special abilitys</li>
+<li>Extra weapons for enemies</li>
 </ul>
 
 <h2>Controls</h2>
