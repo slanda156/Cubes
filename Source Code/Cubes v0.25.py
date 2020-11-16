@@ -201,6 +201,8 @@ class heart:
         pass
 
     def draw(offset):
+        self.light.draw(offset)
+
         newPos = self.pos - offset
         newPos = (int(newPos[0]), int(newPos[1]))
 
@@ -208,8 +210,6 @@ class heart:
 
         if self.cooldown <= 0:
             self.cooldown = 0
-
-        py.draw.circle(gamesurf, RED, newPos, 20)
 
 class spawnPoint:
     def __init__(self, pos, team):
@@ -1104,7 +1104,7 @@ try:
 
         # Define widgets size & position
         resetButtonSize = (150, 40)
-        resetButtonPos = ((WINDOWWIDTH//2)-(resetButtonSize[0]//2), (WINDOWHEIGHT//2)-(resetButtonSize[1]//2))
+        resetButtonPos = ((WINDOWWIDTH//2)-(resetButtonSize[0]//2), (WINDOWHEIGHT//2)-resetButtonSize[1]//2)
 
         menuButtonSize = (150, 40)
         menuButtonPos = ((WINDOWWIDTH//2)-(menuButtonSize[0]//2), (WINDOWHEIGHT//2)-menuButtonSize[1]//2+50)
@@ -1117,7 +1117,8 @@ try:
         # Define widgets
         armorText = textWidget(buttonFont, armors[0].color, ((WINDOWWIDTH/2)-70, (WINDOWHEIGHT/4)+15))
         weaponText = textWidget(buttonFont, weapons[0].color, ((WINDOWWIDTH/2)-70, (WINDOWHEIGHT/4)+90))
-        quitText = textWidget(buttonFont, BLACK, ((WINDOWWIDTH/2)-35, (WINDOWHEIGHT/3)+100))
+        quitText = textWidget(buttonFont, BLACK, ((WINDOWWIDTH/2)-35, (WINDOWHEIGHT/3)+150))
+        optionsText = textWidget(buttonFont, BLACK, ((WINDOWWIDTH/2)-55, (WINDOWHEIGHT/3)+100))
         titletext = textWidget(title2Font, (220, 220, 220), (WINDOWWIDTH/2-90, 150))
         deadText = textWidget(titleFont, RED, (WINDOWWIDTH/2-100, WINDOWHEIGHT*0.2))
         playText = textWidget(buttonFont, BLACK, ((WINDOWWIDTH/2)-30, (WINDOWHEIGHT/3)+50))
@@ -1149,36 +1150,50 @@ try:
                 running = False
 
             if screen == "main_menu":
-                
                 # Check for left clicks
                 if event.type == py.MOUSEBUTTONDOWN and event.button == 1:
+                    # Get mouse position
+                    mousePos = py.mouse.get_pos()
+
                     # Start
-                    if playRect.collidepoint(py.mouse.get_pos()):
+                    if playRect.collidepoint(mousePos):
                         screen = "game_running"
                         reset()
 
+                    # Go to options
+                    if optionsRect.collidepoint(mousePos):
+                        screen = "options"
+
                     # Next weapon
-                    elif upWeaponButtonRect.collidepoint(py.mouse.get_pos()):
+                    elif upWeaponButtonRect.collidepoint(mousePos):
                         weaponIndex += 1
 
                     # Last weapon
-                    elif downWeaponButtonRect.collidepoint(py.mouse.get_pos()):
+                    elif downWeaponButtonRect.collidepoint(mousePos):
                         weaponIndex -= 1
 
                     # Next armor
-                    elif upArmorButtonRect.collidepoint(py.mouse.get_pos()):
+                    elif upArmorButtonRect.collidepoint(mousePos):
                         armorIndex += 1
 
                     # Last armor
-                    elif downArmorButtonRect.collidepoint(py.mouse.get_pos()):
+                    elif downArmorButtonRect.collidepoint(mousePos):
                         armorIndex -= 1
 
                     # Quit game
-                    elif quitButton.collidepoint(py.mouse.get_pos()):
+                    elif quitButton.collidepoint(mousePos):
                         running = False
 
             elif screen == "options":
-                pass
+                # Check for left clicks
+                if event.type == py.MOUSEBUTTONDOWN and event.button == 1:
+                    # Get mouse position
+                    mousePos = py.mouse.get_pos()
+
+                    # Back button
+                    if backButton.collidepoint(mousePos):
+                        screen == "main_menu"
+
             
             elif screen == "game_running":
 
@@ -1249,11 +1264,6 @@ try:
             # Draw text & icons
             titletext.draw("Cubes")
 
-            py.draw.rect(gamesurf, GREY, ((WINDOWWIDTH/2)-90, (WINDOWHEIGHT/3)+50, 180, 40))
-            playRect = py.Rect((WINDOWWIDTH/2)-90, (WINDOWHEIGHT/3)+50, 180, 40)
-
-            playText.draw("PLAY")
-
             py.draw.polygon(gamesurf, BLUE, (downTriangle[0]+upPos1, downTriangle[1]+upPos1, downTriangle[2]+upPos1))
             upWeaponButtonRect = py.Rect(upPos1[0], upPos1[1], 20, 20)
 
@@ -1266,9 +1276,17 @@ try:
             py.draw.polygon(gamesurf, BLUE, (upTriangle[0]+downPos2, upTriangle[1]+downPos2, upTriangle[2]+downPos2))
             downArmorButtonRect = py.Rect(downPos2[0], downPos2[1], 20, 20)
 
-            py.draw.rect(gamesurf, RED, ((WINDOWWIDTH/2)-40, (WINDOWHEIGHT/3)+100, 80, 40))
-            quitButton = py.Rect((WINDOWWIDTH/2)-40, (WINDOWHEIGHT/3)+100, 80, 40)
+            py.draw.rect(gamesurf, RED, ((WINDOWWIDTH/2)-40, (WINDOWHEIGHT/3)+150, 80, 40))
+            quitButton = py.Rect((WINDOWWIDTH/2)-40, (WINDOWHEIGHT/3)+150, 80, 40)
+            
+            py.draw.rect(gamesurf, GREY, ((WINDOWWIDTH/2)-90, (WINDOWHEIGHT/3)+50, 180, 40))
+            playRect = py.Rect((WINDOWWIDTH/2)-90, (WINDOWHEIGHT/3)+50, 180, 40)
 
+            py.draw.rect(gamesurf, GREY, ((WINDOWWIDTH/2)-90, (WINDOWHEIGHT/3)+100, 180, 40))
+            optionsRect = py.Rect((WINDOWWIDTH/2)-90, (WINDOWHEIGHT/3)+100, 180, 40)
+
+            playText.draw("PLAY")
+            optionsText.draw("OPTIONS")
             quitText.draw("QUIT")
 
             # Handeling weapon & armor selection
@@ -1295,10 +1313,14 @@ try:
             characters[char].armor = armors[armorIndex]                   
 
         elif screen == "options":
-            pass
+            py.draw.rect(gamesurf, GREY, (WINDOWWIDTH/2, WINDOWHEIGHT/3*2, 180, 40))
+            backButton = py.Rect(WINDOWWIDTH/2, WINDOWHEIGHT/3*2, 180, 40)
+
+            backText = textWidget(buttonFont, BLACK, (WINDOWWIDTH/2-55, WINDOWHEIGHT/3*2))
+
+            backText.draw("BACK")
             
         elif screen == "game_running":
-
             # Getting pressed mouse buttons
             mouse = py.mouse.get_pressed()
 
@@ -1398,6 +1420,9 @@ try:
                 x.draw(cordOffset)
 
             for x in nests:
+                for y in x.hearts:
+                    x.draw(cordOffset)
+
                 x.draw(cordOffset)
                 x.resize()
 
@@ -1406,9 +1431,6 @@ try:
 
                     if waveCooldown <= 0:
                         y.spawn()
-
-                for y in x.hearts:
-                    x.draw(cordOffset)
 
             for x in barriers:
                 x.draw(cordOffset)
