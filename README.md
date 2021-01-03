@@ -19,7 +19,7 @@
 <li>New vison system</li>
 <li>Bigger map</li>
 <li>Randomly spawned nests</li>
-<li>Nests have hearts special abilitys</li>
+<li>Nests have hearts with special abilitys</li>
 <li>Extra weapons for enemies</li>
 </ul>
 
@@ -154,7 +154,7 @@
 
 <h2>Armors</h2>
 
-<p>All Armors halves incoming damage where the damage types are the same</p>
+<p>All Armors reduces damage where the damage types are the same</p>
 
 <table>
     <tr>
