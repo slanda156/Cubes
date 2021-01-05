@@ -1,16 +1,15 @@
-<h1>Cubes v0.25</h1>
+<h1>Cubes v0.25 beta</h1>
 
 <h2>Installation</h2>
 <ol>
-<li>Download reposite and unzip it</li>
-<li>Open <code>Cubes\Cubes.exe</code></li>
+<li>Download latest release</li>
+<li>Open <code>Cubes.exe</code></li>
 </ol>
 
-<h2>Switching to beta</h2>
+<h2>Beta</h2>
 <ol>
-<li>Click on Branches</li>
-<li>Search for the newes version and select it</li>
-<li>Follow the installation instructions</li>
+This is the beta version of v0.25.
+Features will probably not work correctly and bugs will appear
 </ol>
 
 <h2>Changelog</h2>
