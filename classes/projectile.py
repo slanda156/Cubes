@@ -23,14 +23,14 @@ class projectile:
         self.offset = self.dierection
 
     def draw(self, offset):
-        self.newStart = self.start - offset
-        self.newStart = (int(self.newStart[0]), int(self.newStart[1]))
+        newStart = self.start - offset
+        newStart = (int(newStart[0]), int(newStart[1]))
         #self.offset.scale_to_length(self.weapon.speed/1000 * time) # TODO
 
         if self.weapon.type == plasma:
-            py.draw.circle(self.gamesurf, self.weapon.color, (int(self.newStart[0]), int(self.newStart[1])), int(self.power/2))
+            py.draw.circle(self.gamesurf, self.weapon.color, (int(newStart[0]), int(newStart[1])), int(self.power/2))
         else:
-            py.draw.line(self.gamesurf, self.weapon.color, self.newStart, (self.newStart + self.dierection), self.power*2)
+            py.draw.line(self.gamesurf, self.weapon.color, newStart, (newStart + self.dierection), self.power*2)
 
         self.start += self.offset
         self.range -= self.offset.length()
