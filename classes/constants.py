@@ -1,7 +1,7 @@
 # Import modules
-import pygame as py
 import json
 import glob
+import pygame as py
 
 # Load damage types
 with open("classes\\damageTypes.json") as f:
@@ -42,6 +42,10 @@ boss = {
     0, 0, 1, 0, 0, 1, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0
 }
+
+baseSpeed = 150 # pixel/s
+towerBaseCost = 10
+enemyPower = 1
 
 downTriangle = [py.Vector2(0, 0), py.Vector2(20, 0), py.Vector2(10, 10)]
 upTriangle = [py.Vector2(0, 10), py.Vector2(20, 10), py.Vector2(10, 0)]

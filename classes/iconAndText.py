@@ -1,6 +1,3 @@
-# Import needed modules
-import pygame as py
-
 class iconAndText:
     def __init__(self, sprit, scale, font, textColor, text, pos, gamesurf):
         self.gamesurf = gamesurf
@@ -18,5 +15,5 @@ class iconAndText:
         widget = self.font.render(str(self.text), True, self.textColor)
 
         if self.sprit is not None:
-            gamesurf.blit(self.sprit, self.pos)
+            self.gamesurf.blit(self.sprit, self.pos)
         self.gamesurf.blit(widget, (self.pos[0]+50, self.pos[1]))

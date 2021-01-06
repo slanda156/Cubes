@@ -1,5 +1,6 @@
 # Import needed modules
 import pygame as py
+from classes.constants import *
 
 class barrier:
     def __init__(self, pos, size, death=False):
@@ -8,11 +9,11 @@ class barrier:
         self.death = death
 
     def draw(self, offset):
-        self.newPos = self.pos - offset
+        newPos = self.pos - offset
 
-        self.newPos = (int(self.newPos[0]), int(self.newPos[1]))
+        newPos = (int(self.newPos[0]), int(self.newPos[1]))
 
         if self.death:
-            py.draw.rect(gamesurf, RED, (self.pos[0], self.pos[1], self.size[0], self.size[1]))
+            py.draw.rect(self.gamesurf, RED, (newPos[0], newPos[1], self.size[0], self.size[1]))
         else:
-            py.draw.rect(gamesurf, LIGHTGREY, (self.pos[0], self.pos[1], self.size[0], self.size[1]))
+            py.draw.rect(self.gamesurf, LIGHTGREY, (newPos[0], newPos[1], self.size[0], self.size[1]))

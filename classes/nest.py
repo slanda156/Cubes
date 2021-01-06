@@ -1,9 +1,10 @@
 # Import needed modules
-import pygame as py
 import random as ra
+import pygame as py
 from classes.heart import *
 from classes.spawnpoint import *
 from classes.constants import images
+from classes.functions import calcDist
 
 class nest:
     def __init__(self, pos, team, gamesurf):
@@ -49,7 +50,7 @@ class nest:
                 for x in self.spawns:
                     if calcDist(pos, x.pos) <= 80:
                         retry = False
-                    
+
                 for x in self.hearts:
                     if calcDist(pos, x.pos) <= 100:
                         retry = False
@@ -58,7 +59,7 @@ class nest:
                     # Add it to the lsist
                     self.spawns.append(spawns)
 
-    def draw(self, offset):
+    def draw(self, offset, waveCooldown, time):
         newPos = self.pos - offset
         newPos = (int(newPos[0]), int(newPos[1]))
 
@@ -69,4 +70,4 @@ class nest:
         for x in self.spawns:
             x.draw(offset)
             if waveCooldown <= 0:
-                x.spawn()
+                x.spawn(time)

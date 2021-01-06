@@ -11,7 +11,7 @@ class light:
         self.color = color
         self.radius = intensity * 50
         self.intensity = intensity
-        self.sprit = sprit        
+        self.sprit = sprit
 
         if sprit is not None:
             # Rescale the image

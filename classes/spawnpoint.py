@@ -1,5 +1,10 @@
 # Import needed modules
+import random as ra
 import pygame as py
+from classes.constants import *
+from classes.weapons import *
+from classes.functions import findPlayerChar
+from classes.armor import armorNum
 
 class spawnPoint:
     def __init__(self, pos, team, gamesurf):
@@ -12,7 +17,7 @@ class spawnPoint:
         self.minCooldown = 4
         self.cooldown = self.maxCooldown
 
-    def draw(self, offset):
+    def draw(self, offset, time):
         self.level += time / 60
 
         newPos = (self.pos[0] - offset[0], self.pos[1] - offset[1])
@@ -21,7 +26,7 @@ class spawnPoint:
         py.draw.rect(self.gamesurf, GREY, (newPos[0]-30, newPos[1]-30, 60, 60))
         py.draw.rect(self.gamesurf, GREEN, (newPos[0]-25, newPos[1]-25, 50, 50))
 
-    def spawn(self):
+    def spawn(self, time, characters):
         maxUnits = enemyPower // 5
 
         if maxUnits <= 0:
@@ -34,13 +39,13 @@ class spawnPoint:
                 if self.level // 1 >= 1:
                     allowedWeaponTypes.append(physical)
 
-                if characters[findPlayerChar()].level // 3 >= 1:
+                if characters[findPlayerChar(characters)].level // 3 >= 1:
                     allowedWeaponTypes.append(fire)
 
-                if characters[findPlayerChar()].level // 6 >= 1:
+                if characters[findPlayerChar(characters)].level // 6 >= 1:
                     allowedWeaponTypes.append(plasma)
 
-                if characters[findPlayerChar()].level // 9 >= 1:
+                if characters[findPlayerChar(characters)].level // 9 >= 1:
                     allowedWeaponTypes.append(laser)
 
                 for a in allowedWeaponTypes:

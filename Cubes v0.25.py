@@ -1,6 +1,4 @@
 # Import modules
-import math
-import sys
 import json
 import logging
 import time as ti
@@ -11,21 +9,15 @@ import pygame as py
 # Import classes
 from classes.weapons import weaponNum, weapons, initWeapon
 from classes.armor import armorNum, armors, initArmor
-from classes.item import itemNum, items, initItem
-from classes.upgrade import upgradeNum, upgrades, initUpgrade
+from classes.item import items, initItem
+from classes.upgrade import initUpgrade
 
-from classes.barrier import barrier
 from classes.character import character
 from classes.effect import effect
-from classes.heart import heart
-from classes.icon import icon
 from classes.iconAndText import iconAndText
 from classes.light import light
 from classes.nest import nest
-from classes.projectile import projectile
-from classes.spawnpoint import spawnPoint
 from classes.textWidget import textWidget
-from classes.tower import tower
 
 from classes.constants import *
 
@@ -72,7 +64,6 @@ dots = []
 nests = []
 lights = []
 
-enemyPower = 1
 hudMode = 0
 waveCooldown = 0
 oldLevel = 0
@@ -80,8 +71,6 @@ maxChar = 0
 time = 0
 weaponIndex = 0
 armorIndex = 0
-baseSpeed = 150 # pixel/s
-towerBaseCost = 10
 
 # Define reset
 def reset():
@@ -208,6 +197,19 @@ try:
         effectIconText = iconAndText(None, 5, effectFont, ERROCOLOR, "None", (40, WINDOWHEIGHT-80), gamesurf)
         equippedItemIconText = iconAndText(None, 2, itemFont, GREEN, "None", (WINDOWWIDTH-180, 80), gamesurf)
 
+        upWeaponButtonRect = py.Rect(upPos1[0], upPos1[1], 20, 20)
+        downWeaponButtonRect = py.Rect(downPos1[0], downPos1[1], 20, 20)
+        upArmorButtonRect = py.Rect(upPos2[0], upPos2[1], 20, 20)
+        downArmorButtonRect = py.Rect(downPos2[0], downPos2[1], 20, 20)
+        quitButton = py.Rect((WINDOWWIDTH/2)-40, (WINDOWHEIGHT/3)+150, 80, 40)
+        playRect = py.Rect((WINDOWWIDTH/2)-90, (WINDOWHEIGHT/3)+50, 180, 40)
+        optionsRect = py.Rect((WINDOWWIDTH/2)-90, (WINDOWHEIGHT/3)+100, 180, 40)
+
+        menuButton = py.Rect(menuButtonPos[0], menuButtonPos[1], menuButtonSize[0], menuButtonSize[1])
+        resetButton = py.Rect(resetButtonPos[0], resetButtonPos[1], resetButtonSize[0], resetButtonSize[1])
+
+        backButton = py.Rect(WINDOWWIDTH/2, WINDOWHEIGHT/3*2, 180, 40)
+
         # Main event loop
         for event in py.event.get():
             # Resize the main window
@@ -265,9 +267,9 @@ try:
 
                     # Back button
                     if backButton.collidepoint(mousePos):
-                        screen == "main_menu"
+                        screen = "main_menu"
 
-            
+
             elif screen == "game_running":
 
                 # Changing pause status
@@ -277,8 +279,8 @@ try:
 
                     # Transport mind to nearest enemie
                     elif event.key == py.K_SPACE:
-                        if mindTransport(characters[char], getNearestChar(characters[char])) is not None:
-                            mindTransport(characters[char], getNearestChar(characters[char]))
+                        if mindTransport(characters[char], getNearestChar(characters[char], characters), characters) is not None:
+                            mindTransport(characters[char], getNearestChar(characters[char], characters), characters)
 
                     # Skip wave cooldwon
                     elif event.key == py.K_t and waveCooldown != 0:
@@ -287,7 +289,7 @@ try:
 
                     # Placing Tower
                     elif event.key == py.K_f and characters[char].resources >= characters[char].towerCost:
-                        appendTower(characters[char].pos, characters[char].team, characters[char].towerWeapon, characters[char].level, characters[char].towerAccuracy)
+                        characters[char].spawnTower(characters[char].pos, characters[char].team, characters[char].towerWeapon, characters[char].level, characters[char].towerAccuracy)
 
                     # TEMP Using equiped item
                     elif event.key == py.K_e and characters[char].resources >= items[findObjectInList(items, "medKit")].cost:
@@ -302,7 +304,7 @@ try:
                             hudMode = 0
                         else:
                             hudMode = 1
-                        
+
                 elif event.type == py.MOUSEBUTTONDOWN:
                     # Teleport to mouse position and sets effect
                     if event.button == 3 and characters[char].charge >= 100:
@@ -331,32 +333,18 @@ try:
             elif screen == "game_inventory":
                 pass
 
-
         if screen == "main_menu":
-                
+
             # Draw text & icons
             titletext.draw("Cubes")
 
             py.draw.polygon(gamesurf, BLUE, (downTriangle[0]+upPos1, downTriangle[1]+upPos1, downTriangle[2]+upPos1))
-            upWeaponButtonRect = py.Rect(upPos1[0], upPos1[1], 20, 20)
-
             py.draw.polygon(gamesurf, BLUE, (upTriangle[0]+downPos1, upTriangle[1]+downPos1, upTriangle[2]+downPos1))
-            downWeaponButtonRect = py.Rect(downPos1[0], downPos1[1], 20, 20)
-
             py.draw.polygon(gamesurf, BLUE, (downTriangle[0]+upPos2, downTriangle[1]+upPos2, downTriangle[2]+upPos2))
-            upArmorButtonRect = py.Rect(upPos2[0], upPos2[1], 20, 20)
-
             py.draw.polygon(gamesurf, BLUE, (upTriangle[0]+downPos2, upTriangle[1]+downPos2, upTriangle[2]+downPos2))
-            downArmorButtonRect = py.Rect(downPos2[0], downPos2[1], 20, 20)
-
             py.draw.rect(gamesurf, RED, ((WINDOWWIDTH/2)-40, (WINDOWHEIGHT/3)+150, 80, 40))
-            quitButton = py.Rect((WINDOWWIDTH/2)-40, (WINDOWHEIGHT/3)+150, 80, 40)
-            
             py.draw.rect(gamesurf, GREY, ((WINDOWWIDTH/2)-90, (WINDOWHEIGHT/3)+50, 180, 40))
-            playRect = py.Rect((WINDOWWIDTH/2)-90, (WINDOWHEIGHT/3)+50, 180, 40)
-
             py.draw.rect(gamesurf, GREY, ((WINDOWWIDTH/2)-90, (WINDOWHEIGHT/3)+100, 180, 40))
-            optionsRect = py.Rect((WINDOWWIDTH/2)-90, (WINDOWHEIGHT/3)+100, 180, 40)
 
             playText.draw("PLAY")
             optionsText.draw("OPTIONS")
@@ -383,16 +371,15 @@ try:
             armorText.draw(armors[armorIndex].displayName)
 
             characters[char].weapon = weapons[weaponIndex]
-            characters[char].armor = armors[armorIndex]                   
+            characters[char].armor = armors[armorIndex]
 
         elif screen == "options":
             py.draw.rect(gamesurf, GREY, (WINDOWWIDTH/2, WINDOWHEIGHT/3*2, 180, 40))
-            backButton = py.Rect(WINDOWWIDTH/2, WINDOWHEIGHT/3*2, 180, 40)
 
-            backText = textWidget(buttonFont, BLACK, (WINDOWWIDTH/2-55, WINDOWHEIGHT/3*2))
+            backText = textWidget(buttonFont, BLACK, (WINDOWWIDTH/2-55, WINDOWHEIGHT/3*2), gamesurf)
 
             backText.draw("BACK")
-            
+
         elif screen == "game_running":
             # Getting pressed mouse buttons
             mouse = py.mouse.get_pressed()
@@ -463,7 +450,7 @@ try:
 
             # Check for dead characters and delets them
             for x in characters:
-                checkHits(x.shots, characters)
+                checkHits(x.shots, characters, characters)
                 for z in x.shots:
                     for y in barriers:
                         if checkRectangle(y, z):
@@ -494,7 +481,7 @@ try:
                 x.draw(cordOffset)
 
             for x in nests:
-                x.draw(cordOffset)
+                x.draw(cordOffset, waveCooldown, time)
                 x.resize()
 
             for x in barriers:
@@ -504,7 +491,7 @@ try:
                 x.draw(cordOffset, time, lights)
                 for w in x.towers:
                     w.draw(cordOffset)
-                    checkHits(w.shots, characters)
+                    checkHits(w.shots, characters, characters)
                     for z in w.shots:
                         for y in barriers:
                             if checkRectangle(y, z):
@@ -543,7 +530,7 @@ try:
             levelText.draw(f"Level: {characters[char].level}")
 
             resourcesText.draw(f"Resources: {round(characters[char].resources, 1)}")
-                    
+
             equippedItemIconText.draw(f"{items[0].displayName}: {characters[char].inventory.get(items[0].name).amount}")
 
             for x in characters[char].effect:
@@ -558,10 +545,7 @@ try:
 
         elif screen == "game_paused" or screen == "death_screen":
             py.draw.rect(gamesurf, GREY, (resetButtonPos[0], resetButtonPos[1], resetButtonSize[0], resetButtonSize[1]))
-            resetButton = py.Rect(resetButtonPos[0], resetButtonPos[1], resetButtonSize[0], resetButtonSize[1])
-
             py.draw.rect(gamesurf, GREY, (menuButtonPos[0], menuButtonPos[1], menuButtonSize[0], menuButtonSize[1]))
-            menuButton = py.Rect(menuButtonPos[0], menuButtonPos[1], menuButtonSize[0], menuButtonSize[1])
 
             # Print current title
             if screen == "game_paused":

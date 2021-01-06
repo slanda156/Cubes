@@ -1,8 +1,6 @@
 # Import modules
 import logging
 import random as ra
-import time as ti
-import math
 from classes.constants import *
 
 # Define logger
@@ -16,54 +14,6 @@ def findPlayerChar(characters):
     for x in characters:
         if x.controlled:
             return characters.index(x)
-
-def checkCollision(character, object):
-    hyp = 0
-    offset = py.Vector2(y.pos[0]+y.size[0]/2, y.pos[1]+y.size[1]/2)
-    vector = py.Vector2(character.pos[0]-offset[0], character.pos[1]-offset[1])
-    if vector[0] > 0 and vector[1] < 0:
-        x = (0*90) + math.degrees(math.atan(positiveNum(vector[0])/positiveNum(vector[1])))
-        if x <= 45:
-            hyp = (object.size[1]/2)/math.cos(math.radians(x))
-        elif x > 45:
-            hyp = (object.size[0]/2)/math.cos(math.radians(x))
-
-    elif vector[0] > 0 and vector[1] > 0:
-        x = math.degrees(math.atan(positiveNum(vector[1])/positiveNum(vector[0])))
-        if x <= 45:
-            hyp = (object.size[1]/2)/math.cos(math.radians(x))
-        elif x > 45:
-            hyp = (object.size[0]/2)/math.cos(math.radians(x))
-
-    elif vector[0] < 0 and vector[1] > 0:
-        x = math.degrees(math.atan(positiveNum(vector[0])/positiveNum(vector[1])))
-        if x <= 45:
-            hyp = (object.size[1]/2)/math.cos(math.radians(x))
-        elif x > 45:
-            hyp = (object.size[0]/2)/math.cos(math.radians(x))
-
-    elif vector[0] < 0 and vector[1] < 0:
-        x = math.degrees(math.atan(positiveNum(vector[1])/positiveNum(vector[0])))
-        if x <= 45:
-            hyp = (object.size[1]/2)/math.cos(math.radians(x))
-        elif x > 45:
-            hyp = (object.size[0]/2)/math.cos(math.radians(x))
-
-    elif vector[0] == 0 and vector[1] < 0:
-        hyp = object.size[1]/2
-
-    elif vector[0] > 0 and vector[1] == 0:
-        hyp = object.size[0]/2
-
-    elif vector[0] == 0 and vector[1] > 0:
-        hyp = object.size[1]/2
-
-    elif vector[0] < 0 and vector[1] == 0:
-        hyp = object.size[0]/2
-
-    if hyp + character.radius > vector.length():
-        vector.scale_to_length(hyp + character.radius)
-        characters[character.seq].pos += vector
 
 def checkCircle(circle, projectile, radius):
     if calcDist(circle.pos, projectile.start) <= radius:
@@ -79,23 +29,23 @@ def checkRectangle(rectangle, projectile):
     else:
         return False
 
-def checkList(list, var):
-    for x in list:
+def checkList(inList, var):
+    for x in inList:
         if x.type == var:
             return True
         else:
             return False
 
-def findObjectInList(list, var):
-    if len(list) <= 1:
+def findObjectInList(inList, var):
+    if len(inList) <= 1:
         return 0
 
     else:
-        for i in range(len(list)-1):
-            if list[i].name == var:
+        for i in range(len(inList)-1):
+            if inList[i].name == var:
                 return i
 
-def checkHits(projectiles, objects):
+def checkHits(projectiles, objects, characters):
     for x in projectiles:
         for y in objects:
             if x.team != y.team:
@@ -151,7 +101,7 @@ def canSeeTarget(char, target):
 
     return True
 
-def getNearestChar(start):
+def getNearestChar(start, characters):
     distance = []
     minDist = [0, 0]
     if len(characters) > 1:
@@ -167,7 +117,7 @@ def getNearestChar(start):
 
         return characters[minDist[1]]
 
-def getNearestFriendlyChar(start):
+def getNearestFriendlyChar(start, characters):
     distance = []
     minDist = None
 
@@ -185,7 +135,7 @@ def getNearestFriendlyChar(start):
 
         return characters[minDist[1]]
 
-def getNearestEnemieChar(start):
+def getNearestEnemieChar(start, characters):
     distance = []
     minDist = [0, 0]
 
@@ -212,7 +162,7 @@ def getLights(pos, lights):
 
     return value
 
-def mindTransport(start, target):
+def mindTransport(start, target, characters):
     if start is not None and target is not None:
         oldChar = target
         characters[characters.index(target)] = start
@@ -221,36 +171,36 @@ def mindTransport(start, target):
 def generatePointsAroundDot(pos, minVar, maxVar):
     points = []
     power = ra.randrange(minVar, maxVar)
-    
+
     while len(points) < power:
         distance = []
         minVal = 0
-    
+
         a = ra.randrange(-10, 10)
         b = ra.randrange(-10, 10)
         c = ra.randrange(40, 400)
         offset = py.Vector2(a, b)
-        
+
         if offset.length() != 0:
             offset.scale_to_length(c)
-    
+
         if len(points) > 1:
             for x in points:
                 if calcDist(x, pos+offset) > 100:
                     distance.append((calcDist(x, pos+offset)))
-                
+
             for x in distance:
                 if minVal != 0:
                     if minVal < x:
                         minVal = x
-                
+
                 else:
                     minVal = x
-    
+
             if minVal > 50:
                 points.append(pos+offset)
-                
+
         else:
             points.append(pos+offset)
-    
+
     return points

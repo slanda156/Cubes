@@ -16,7 +16,7 @@ class heart:
     def atack(self):
         pass
 
-    def draw(offset):
+    def draw(self, offset, time):
         newPos = self.pos - offset
         newPos = (int(newPos[0]), int(newPos[1]))
 

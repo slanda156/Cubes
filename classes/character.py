@@ -4,19 +4,22 @@ from classes.weapons import *
 from classes.functions import *
 from classes.item import *
 from classes.constants import *
-from classes.projectile import *
+from classes.projectile import projectile
+from classes.tower import tower
+from classes.effect import effect
 
 class character:
-    def __init__(self, pos, origine, team, weapon, armor, speed, towerBaseCost, gamesurf, controlled=False):
+    def __init__(self, pos, origine, team, usedWeapon, usedArmor, speed, towerCost, gamesurf, controlled=False):
         self.gamesurf = gamesurf
         self.controlled = controlled
         self.pos = py.Vector2(pos[0], pos[1])
+        self.newPos = [0, 0]
         self.origine = origine
         self.destiny = None
         self.type = "player"
         self.shots = []
-        self.weapon = weapon
-        self.armor = armor
+        self.weapon = usedWeapon
+        self.armor = usedArmor
         self.team = team
         self.visibility = 1
         self.cooldown = 0.1
@@ -30,7 +33,7 @@ class character:
         self.maxCharge = 200
         self.charge = 0
         self.towers = []
-        self.towerCost = towerBaseCost
+        self.towerCost = towerCost
         self.towerUpgrades = []
         self.towerAccuracy = 1
         self.towerWeapon = weapons[findObjectInList(weapons, "rifle")]
@@ -49,6 +52,7 @@ class character:
         self.effectDuration = 0
         self.effectDamage = 0
         self.radius = 20
+        self.time = 0
 
         if self.armor.type == physical:
             self.movementSpeed = int(speed * 0.8)
@@ -56,6 +60,7 @@ class character:
             self.movementSpeed = int(speed)
 
     def draw(self, offset, time, lights):
+        self.time = time
         # Get current brightness
         lamps = getLights(self.pos, lights)
         b = 1
@@ -80,7 +85,7 @@ class character:
             self.boost = self.maxBoost
 
         if self.charge < self.maxCharge:
-            self.charge += time*10
+            self.charge += self.time*10
         else:
             self.charge = self.maxCharge
 
@@ -90,9 +95,9 @@ class character:
 
         for x in self.effect:
             if x.type == self.armor.type:
-                self.health -= (x.damage*time)*0.33
+                self.health -= (x.damage*self.time)*0.33
             else:
-                self.health -= x.damage*time
+                self.health -= x.damage*self.time
 
             if x.duration <= 0:
                 try:
@@ -102,9 +107,10 @@ class character:
 
         if self.controlled:
             self.target = py.mouse.get_pos() + offset
-            
+
         else:
-            target = characters[findPlayerChar()]
+            characters = [self]
+            target = characters[findPlayerChar(characters)] #TODO
 
             if canSeeTarget(self, target):
                 self.target = target
@@ -115,11 +121,11 @@ class character:
 
         for x in self.effect:
             if x.duration > 0:
-                x.duration -= time
+                x.duration -= self.time
 
         py.draw.circle(self.gamesurf, (200, 200, 200), self.newPos, self.radius)
 
-        if type(self.target) is py.Vector2:
+        if isinstance(self.target, py.Vector2):
             target = self.target
         else:
             target = self.target.pos
@@ -139,7 +145,7 @@ class character:
             newpos = (int(pos[0]), int(pos[1]))
             py.draw.circle(self.gamesurf, ERROCOLOR, newpos, 20)
 
-        self.cooldown -= time
+        self.cooldown -= self.time
 
     def idle(self):
         # Check how far away the origine is
@@ -170,13 +176,13 @@ class character:
                 localDir = py.Vector2(self.destiny[0]-self.pos[0], self.destiny[1]-self.pos[1])
 
                 try:
-                    localDir.scale_to_length(int(self.movementSpeed * time))
+                    localDir.scale_to_length(int(self.movementSpeed * self.time))
                 except:
                     logger.warning("Cannot scale a vector with zero length")
 
                 if calcDist(self.pos, self.destiny) > (self.weapon.range/2):
                     if self.boost > 0 and calcDist(self.pos, self.destiny) > self.weapon.range:
-                        localDir.scale_to_length(int((self.movementSpeed * 2) * time))
+                        localDir.scale_to_length(int((self.movementSpeed * 2) * self.time))
                         self.boost -= 20
                     else:
                         self.boost += 10
@@ -186,7 +192,7 @@ class character:
 
                 else:
                     if self.boost > 0 and calcDist(self.pos, self.destiny) < (self.weapon.range/3):
-                        localDir.scale_to_length(int((self.movementSpeed * 2) * time))
+                        localDir.scale_to_length(int((self.movementSpeed * 2) * self.time))
                         self.boost -= 20
                     else:
                         self.boost += 10
@@ -196,34 +202,33 @@ class character:
             else:
                 self.destiny = None
         else:
-            pass
             self.idle()
 
     def ai(self):
         if not checkList(self.effect, "shocked"):
-            if self.cooldown <= 0 and type(self.target) == character:
+            if self.cooldown <= 0 and isinstance(self.target, character):
                 if calcDist(self.pos, self.target.pos) < self.weapon.range:
                     self.shoot()
 
             self.move()
 
-    def getHit(self, weapon):
-        self.effectDuration = weapon.effectDuration
+    def getHit(self, hitWeapon):
+        self.effectDuration = hitWeapon.effectDuration
 
-        if weapon.effect is not None:
-            if checkList(self.effect, weapon.effect):
-                effectPos = self.effect.index(weapon.effect)
-                self.effect[effectPos].effectDuration = weapon.effectDuration
-                self.effect[effectPos].effectDamage = weapon.effectDamage
+        if hitWeapon.effect is not None:
+            if checkList(self.effect, hitWeapon.effect):
+                effectPos = self.effect.index(hitWeapon.effect)
+                self.effect[effectPos].effectDuration = hitWeapon.effectDuration
+                self.effect[effectPos].effectDamage = hitWeapon.effectDamage
 
             else:
-                self.effect.append(effect(weapon.type, weapon.effectDuration, weapon.damage/10, weapon.color))
+                self.effect.append(effect(hitWeapon.type, hitWeapon.effectDuration, hitWeapon.damage/10, hitWeapon.color))
 
-        if self.armor.type == weapon.type:
-            self.health -= weapon.damage/2
+        if self.armor.type == hitWeapon.type:
+            self.health -= hitWeapon.damage/2
 
         else:
-            self.health -= weapon.damage
+            self.health -= hitWeapon.damage
 
     def healthBar(self):
         pos = self.newPos + py.Vector2(0, -20)
@@ -240,11 +245,11 @@ class character:
         py.draw.rect(self.gamesurf, RED, (pos[0]-18, pos[1]-4, int(36*i), 8))
 
     def shoot(self):
-        if type(self.target) is py.Vector2:
+        if isinstance(self.target, py.Vector2):
             localTarget = self.target
         else:
             localTarget = self.target.pos
-        
+
         dierection = py.Vector2(localTarget[0]-self.pos[0], localTarget[1]-self.pos[1])
 
         if self.weapon.type == fire:
@@ -273,8 +278,8 @@ class character:
 
         self.cooldown = self.maxCooldown
 
-    def spawnTower():
+    def spawnTower(self):
         self.resources -= self.towerCost
         self.towerCost += towerBaseCost
 
-        self.towers.append(tower((pos[0], pos[1]-40), self.team, self.towerWeapon, self.level, self.towerAccuracy))
+        self.towers.append(tower((self.pos[0], self.pos[1]-40), self.team, self.towerWeapon, self.level, self.towerAccuracy))

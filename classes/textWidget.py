@@ -1,6 +1,3 @@
-# Import needed modules
-import pygame as py
-
 class textWidget:
     def __init__(self, font, color, pos, gamesurf):
         self.font = font
