@@ -1,16 +1,15 @@
 # Import modules
-import json
-import logging
 import time as ti
 import traceback
 import random as ra
 import pygame as py
 
 # Import classes
-from classes.weapons import weaponNum, weapons, initWeapon
-from classes.armor import armorNum, armors, initArmor
-from classes.item import items, initItem
-from classes.upgrade import initUpgrade
+from classes.weapons import *
+from classes.armor import *
+#from classes.item import *
+from classes.nitem import *
+from classes.upgrade import *
 
 from classes.character import character
 from classes.effect import effect
@@ -19,14 +18,11 @@ from classes.light import light
 from classes.nest import nest
 from classes.textWidget import textWidget
 
+# Import constants
 from classes.constants import *
 
 # Import functions
 from classes.functions import *
-
-# Load damage types
-with open("classes\\damageTypes.json") as f:
-    damageTypes = json.load(f)
 
 # Define the window
 setFPS = 60
@@ -34,19 +30,6 @@ QUALITY = (16, 9)
 cordOffset = py.Vector2(0, 0)
 WINDOWWIDTH = 2040
 WINDOWHEIGHT = int((WINDOWWIDTH/QUALITY[0])*QUALITY[1])
-
-# Sets the logging filter
-t = ti.localtime()
-startTime = ti.time()
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.FileHandler("log.log", mode='w'),
-        logging.StreamHandler()
-    ]
-)
-logger = logging.getLogger(__name__)
 
 logger.info(f"Starting, version: {version}")
 
@@ -110,7 +93,12 @@ def reset():
     lights.append(light(pos, ORANGE, 10, images.get("lamp1.png")))
 
     pos = (WINDOWWIDTH/2, WINDOWHEIGHT/2)
-    characters.append(character(pos, None, 0, oldWeapon, oldArmor, baseSpeed, towerBaseCost, gamesurf, True))
+    tempCharacter = character(pos, None, 0, oldWeapon, oldArmor, baseSpeed, towerBaseCost, gamesurf, True)
+
+    if findItemInDic("medKit", items) is not False:
+        tempCharacter.addItem(findItemInDic("medKit", items))
+
+    characters.append(tempCharacter)
 
     pos = (ra.randrange(0, WINDOWWIDTH), ra.randrange(0, WINDOWHEIGHT))
     team = 1
@@ -131,13 +119,6 @@ screen = "main_menu"
 
 # Creates the main clock
 clock = py.time.Clock()
-
-# Init all needed modules
-initFunctions(logger)
-initArmor(logger)
-initWeapon(logger)
-initItem(logger)
-initUpgrade(logger)
 
 # Main Loop
 
@@ -276,11 +257,6 @@ try:
                 if event.type == py.KEYDOWN:
                     if event.key == py.K_ESCAPE:
                         screen = "game_paused"
-
-                    # Transport mind to nearest enemie
-                    elif event.key == py.K_SPACE:
-                        if mindTransport(characters[char], getNearestChar(characters[char], characters), characters) is not None:
-                            mindTransport(characters[char], getNearestChar(characters[char], characters), characters)
 
                     # Skip wave cooldwon
                     elif event.key == py.K_t and waveCooldown != 0:
@@ -531,7 +507,11 @@ try:
 
             resourcesText.draw(f"Resources: {round(characters[char].resources, 1)}")
 
-            equippedItemIconText.draw(f"{items[0].displayName}: {characters[char].inventory.get(items[0].name).amount}")
+            if len(characters[char].inventory) > 0:
+                tempItem = characters[char].inventory.get(items[0].name).amount
+                equippedItemIconText.draw("{}: {}")
+            else:
+                equippedItemIconText.draw("No items")
 
             for x in characters[char].effect:
                 effectIconText.icon = images.get(x.type)

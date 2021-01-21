@@ -1,0 +1,23 @@
+{
+    "medkit" : {
+        "name" : "medKit",
+        "displayName" : "Med Kit",
+        "category" : "healing",
+        "uses" : 1,
+        "cost" : 20,
+        "args" :{
+            "healing" : 20
+        }
+    },
+
+    "test" : {
+        "name" : "test",
+        "displayName" : "TEST",
+        "category" : "test",
+        "uses" : 0,
+        "cost" : 20,
+        "args" :{
+            "damage" : 20
+        }
+    }
+}

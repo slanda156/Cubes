@@ -1,20 +1,8 @@
 # Importing modules
-import logging
 from classes.constants import *
 
-# Define logger
-logger = logging.getLogger(__name__)
-
 weaponNum = 6
-
 weapons = []
-
-def initWeapon(l):
-    global logger
-    logger = l
-    logger.info("Loading weapons")
-    for i in range(weaponNum):
-        weapons.append(weapon(i))
 
 class weapon:
     def __init__(self, index):
@@ -137,3 +125,7 @@ class weapon:
         self.effect = "burning"
         self.effectDamage = 1
         self.effectDuration = 2
+
+logger.info("Loading weapons")
+for i in range(weaponNum):
+    weapons.append(weapon(i))

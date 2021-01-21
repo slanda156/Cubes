@@ -1,24 +1,8 @@
 # Importing modules
-import logging
-import json
-
-# Define logger
-logger = logging.getLogger(__name__)
-
-# Load damage types
-with open("classes\\damageTypes.json") as f:
-    damageTypes = json.load(f)
+from classes.constants import logger
 
 upgradeNum = 6
-
 upgrades = []
-
-def initUpgrade(l):
-    global logger
-    logger = l
-    logger.info("Loading upgrades")
-    for i in range(upgradeNum):
-        upgrades.append(upgrade(i))
 
 class upgrade:
     def __init__(self, index):
@@ -50,3 +34,7 @@ class upgrade:
         self.color = (255, 0, 102)
         self.effect = None
         self.effectDuration = 0
+
+logger.info("Loading upgrades")
+for i in range(upgradeNum):
+    upgrades.append(upgrade(i))

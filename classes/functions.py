@@ -1,19 +1,20 @@
 # Import modules
-import logging
 import random as ra
 from classes.constants import *
-
-# Define logger
-logger = logging.getLogger(__name__)
-
-def initFunctions(l):
-    global logger
-    logger = l
 
 def findPlayerChar(characters):
     for x in characters:
         if x.controlled:
             return characters.index(x)
+
+def findItemInDic(name, dic):
+    for x in dic:
+        x = dic[x]
+        print(x.name)
+        if x.name == name:
+            return x
+    logger.warning(f"Couldn't find item: {name}")
+    return False
 
 def checkCircle(circle, projectile, radius):
     if calcDist(circle.pos, projectile.start) <= radius:
@@ -87,9 +88,6 @@ def positiveNum(number):
 
     return number
 
-def sculpt(pos, texture, color1, color2, color3, scale): # TODO
-    pass
-
 def canSeeTarget(char, target):
     # Check for visibility
     if not target.visible > char.awareness:
@@ -161,12 +159,6 @@ def getLights(pos, lights):
             value.append(x)
 
     return value
-
-def mindTransport(start, target, characters):
-    if start is not None and target is not None:
-        oldChar = target
-        characters[characters.index(target)] = start
-        characters[characters.index(start)] = oldChar
 
 def generatePointsAroundDot(pos, minVar, maxVar):
     points = []

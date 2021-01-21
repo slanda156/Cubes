@@ -2,7 +2,6 @@
 import pygame as py
 from classes.weapons import *
 from classes.functions import *
-from classes.item import *
 from classes.constants import *
 from classes.projectile import projectile
 from classes.tower import tower
@@ -30,15 +29,19 @@ class character:
         self.visualRange = 500
         self.resources = 0
         self.upgrades = []
+
         self.maxCharge = 200
         self.charge = 0
+
         self.towers = []
         self.towerCost = towerCost
         self.towerUpgrades = []
         self.towerAccuracy = 1
         self.towerWeapon = weapons[findObjectInList(weapons, "rifle")]
         self.accuracy = 1
-        self.inventory = {items[0].name: items[0]}
+
+        self.inventory = {}
+        self.equipItem = None
 
         if self.armor.type == physical:
             self.maxHealth = float(10 * self.level * 2)
@@ -48,9 +51,11 @@ class character:
         self.health = self.maxHealth
         self.maxBoost = 100
         self.boost = self.maxBoost
+
         self.effect = []
         self.effectDuration = 0
         self.effectDamage = 0
+
         self.radius = 20
         self.time = 0
 
@@ -222,7 +227,7 @@ class character:
                 self.effect[effectPos].effectDamage = hitWeapon.effectDamage
 
             else:
-                self.effect.append(effect(hitWeapon.type, hitWeapon.effectDuration, hitWeapon.damage/10, hitWeapon.color))
+                self.effect.append(effect(hitWeapon.typ, hitWeapon.effectDuration, hitWeapon.damage/10, hitWeapon.color))
 
         if self.armor.type == hitWeapon.type:
             self.health -= hitWeapon.damage/2
@@ -283,3 +288,6 @@ class character:
         self.towerCost += towerBaseCost
 
         self.towers.append(tower((self.pos[0], self.pos[1]-40), self.team, self.towerWeapon, self.level, self.towerAccuracy))
+
+    def addItem(self, item):
+        self.inventory[item.displayName] = item

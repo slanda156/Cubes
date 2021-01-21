@@ -45,10 +45,6 @@ Features will probably not work correctly and bugs will appear
         <td>WIP</td>
     </tr>
     <tr>
-        <td>Spacebar:</td>
-        <td>Mind transfer</td>
-    </tr>
-    <tr>
         <td>LMB:</td>
         <td>Shoot</td>
     </tr>

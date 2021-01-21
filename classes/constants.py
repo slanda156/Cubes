@@ -1,7 +1,22 @@
 # Import modules
 import json
 import glob
+import time as ti
+import logging
 import pygame as py
+
+# Sets the logging filter
+t = ti.localtime()
+startTime = ti.time()
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler("log.log", mode='w'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
 
 # Load damage types
 with open("classes\\damageTypes.json") as f:
