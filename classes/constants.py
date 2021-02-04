@@ -24,6 +24,23 @@ with open("classes\\damageTypes.json") as f:
 
 version = "0.25"
 
+# Defined resolutions
+RESOLUTIONS = [
+    [4096, 2160],
+    [2960, 1440],
+    [2560, 1440],
+    [1920, 1080],
+    [1280, 720],
+    [960, 640],
+    [800, 600]
+]
+
+# Sets screen mode
+screen = "main_menu"
+
+# Configs
+settings = {}
+
 # Define Colors
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)

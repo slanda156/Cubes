@@ -2,6 +2,10 @@
 import random as ra
 from classes.constants import *
 
+def changeScreen(newScreen):
+    global screen
+    screen = newScreen
+
 def findPlayerChar(characters):
     for x in characters:
         if x.controlled:
@@ -10,7 +14,6 @@ def findPlayerChar(characters):
 def findItemInDic(name, dic):
     for x in dic:
         x = dic[x]
-        print(x.name)
         if x.name == name:
             return x
     logger.warning(f"Couldn't find item: {name}")

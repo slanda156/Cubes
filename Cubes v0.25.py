@@ -1,4 +1,5 @@
 # Import modules
+import json
 import time as ti
 import traceback
 import random as ra
@@ -7,8 +8,7 @@ import pygame as py
 # Import classes
 from classes.weapons import *
 from classes.armor import *
-#from classes.item import *
-from classes.nitem import *
+from classes.item import *
 from classes.upgrade import *
 
 from classes.character import character
@@ -17,6 +17,8 @@ from classes.iconAndText import iconAndText
 from classes.light import light
 from classes.nest import nest
 from classes.textWidget import textWidget
+from classes.settingWidget import settingField
+from classes.button import button
 
 # Import constants
 from classes.constants import *
@@ -26,10 +28,9 @@ from classes.functions import *
 
 # Define the window
 setFPS = 60
-QUALITY = (16, 9)
 cordOffset = py.Vector2(0, 0)
-WINDOWWIDTH = 2040
-WINDOWHEIGHT = int((WINDOWWIDTH/QUALITY[0])*QUALITY[1])
+WINDOWHEIGHT= 0
+WINDOWWIDTH = 0
 
 logger.info(f"Starting, version: {version}")
 
@@ -46,6 +47,7 @@ barriers = []
 dots = []
 nests = []
 lights = []
+tempSettings = []
 
 hudMode = 0
 waveCooldown = 0
@@ -71,6 +73,10 @@ def reset():
     global towers
     global cordOffset
     global lights
+    global settings
+    global tempSettings
+
+    tempSettings = settings
 
     cordOffset[0] = 0
     cordOffset[1] = 0
@@ -95,8 +101,11 @@ def reset():
     pos = (WINDOWWIDTH/2, WINDOWHEIGHT/2)
     tempCharacter = character(pos, None, 0, oldWeapon, oldArmor, baseSpeed, towerBaseCost, gamesurf, True)
 
-    if findItemInDic("medKit", items) is not False:
-        tempCharacter.addItem(findItemInDic("medKit", items))
+    tempCharacter.addItem(items.get("medKit"))
+    tempCharacter.equipItem = tempCharacter.inventory[0]
+
+    for x in range(0, 5):
+        tempCharacter.addItem(items.get("bandage"))
 
     characters.append(tempCharacter)
 
@@ -104,18 +113,39 @@ def reset():
     team = 1
     nests.append(nest(pos, team, gamesurf))
 
+# Init of settings
+def initSettings():
+    global settings
+    global WINDOWWIDTH
+    global WINDOWHEIGHT
+    # Open settings
+    with open("settings.json", "r+") as f:
+        # Load settings
+        settings = json.load(f)
+        display = settings.get("display")
+
+    # Define screen resolution
+    WINDOWWIDTH = display.get("resolutionX")
+    WINDOWHEIGHT = display.get("resolutionY")
+
 # Initialsation
 
 # Init pygame
 if not py.get_init():
     py.init()
 
+# Load settings
+initSettings()
+
 # Sets the display
-gamesurf = py.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT), py.RESIZABLE)
+gamesurf = py.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT))
 py.display.set_caption(f"Cubes v.{version}")
 
-# Sets screen mode
-screen = "main_menu"
+# Define setting windows
+setting1 = settingField((200, 200), (200, 500), gamesurf)
+setting2 = settingField((500, 200), (200, 500), gamesurf)
+setting3 = settingField((800, 200), (200, 500), gamesurf)
+setting4 = settingField((1100, 200), (200, 500), gamesurf)
 
 # Creates the main clock
 clock = py.time.Clock()
@@ -189,18 +219,11 @@ try:
         menuButton = py.Rect(menuButtonPos[0], menuButtonPos[1], menuButtonSize[0], menuButtonSize[1])
         resetButton = py.Rect(resetButtonPos[0], resetButtonPos[1], resetButtonSize[0], resetButtonSize[1])
 
-        backButton = py.Rect(WINDOWWIDTH/2, WINDOWHEIGHT/3*2, 180, 40)
+        backButton = py.Rect(WINDOWWIDTH/2-55, WINDOWHEIGHT/3*2, 180, 40)
+        applyButton = py.Rect(WINDOWWIDTH/2-55, WINDOWHEIGHT/3*2-50, 180, 40)
 
         # Main event loop
         for event in py.event.get():
-            # Resize the main window
-            if event.type == py.VIDEORESIZE:
-                # Resize display
-                gamesurf = py.display.set_mode((event.w, event.h), py.RESIZABLE)
-                # Gets window size
-                WINDOWHEIGHT = gamesurf.get_height()
-                WINDOWWIDTH = gamesurf.get_width()
-
             # Breaks loop when window closes
             if event.type == py.QUIT:
                 running = False
@@ -250,11 +273,30 @@ try:
                     if backButton.collidepoint(mousePos):
                         screen = "main_menu"
 
+                    # Apply settings
+                    elif applyButton.collidepoint(mousePos):
+                        settings = tempSettings
+
+                    # Resolution up
+                    elif backButton.collidepoint(mousePos):
+                        pass
+
+                    # Resolution down
+                    elif backButton.collidepoint(mousePos):
+                        pass
 
             elif screen == "game_running":
+                if event.type == py.MOUSEBUTTONDOWN:
+                    # Cycle through items UP
+                    if event.button == 4:
+                        characters[char].changeItem(1)
 
-                # Changing pause status
+                    # Cycle through items DOWN
+                    elif event.button == 5:
+                        characters[char].changeItem(-1)
+
                 if event.type == py.KEYDOWN:
+                    # Changing pause status
                     if event.key == py.K_ESCAPE:
                         screen = "game_paused"
 
@@ -267,12 +309,9 @@ try:
                     elif event.key == py.K_f and characters[char].resources >= characters[char].towerCost:
                         characters[char].spawnTower(characters[char].pos, characters[char].team, characters[char].towerWeapon, characters[char].level, characters[char].towerAccuracy)
 
-                    # TEMP Using equiped item
-                    elif event.key == py.K_e and characters[char].resources >= items[findObjectInList(items, "medKit")].cost:
-                        characters[char].health += (items[findObjectInList(items, "medKit")].healing/100)*characters[char].maxHealth
-
-                        if characters[char].health > characters[char].maxHealth:
-                            characters[char].health = characters[char].maxHealth
+                    # Using equiped item
+                    elif event.key == py.K_e and characters[char].equipItem is not None:
+                        characters[char].useItem()
 
                     # Change hud mode
                     elif event.key == py.K_F1:
@@ -350,11 +389,20 @@ try:
             characters[char].armor = armors[armorIndex]
 
         elif screen == "options":
-            py.draw.rect(gamesurf, GREY, (WINDOWWIDTH/2, WINDOWHEIGHT/3*2, 180, 40))
+            backButton = button((WINDOWWIDTH/2-55, WINDOWHEIGHT/3*2), (180, 40), gamesurf, changeScreen, "main_menu")
+            py.draw.rect(gamesurf, GREY, (WINDOWWIDTH/2-55, WINDOWHEIGHT/3*2, 180, 40))
+            py.draw.rect(gamesurf, GREY, (WINDOWWIDTH/2-55, WINDOWHEIGHT/3*2-50, 180, 40))
+
+            setting1.draw()
+            setting2.draw()
+            setting3.draw()
+            setting4.draw()
 
             backText = textWidget(buttonFont, BLACK, (WINDOWWIDTH/2-55, WINDOWHEIGHT/3*2), gamesurf)
+            applyText = textWidget(buttonFont, BLACK, (WINDOWWIDTH/2-55, WINDOWHEIGHT/3*2-50), gamesurf)
 
-            backText.draw("BACK")
+            backText.draw("Back")
+            applyText.draw("Apply")
 
         elif screen == "game_running":
             # Getting pressed mouse buttons
@@ -508,8 +556,8 @@ try:
             resourcesText.draw(f"Resources: {round(characters[char].resources, 1)}")
 
             if len(characters[char].inventory) > 0:
-                tempItem = characters[char].inventory.get(items[0].name).amount
-                equippedItemIconText.draw("{}: {}")
+                tempItem = characters[char].equipItem
+                equippedItemIconText.draw(f"{tempItem.displayName}: {tempItem.uses}")
             else:
                 equippedItemIconText.draw("No items")
 
@@ -557,5 +605,9 @@ except:
 finally:
     # Stops all pygame modules and closes all windows
     py.quit()
+    # Save settings to json
+    logger.info("Saving settings")
+    with open("settings.json", "w+") as f:
+        json.dump(settings, f)
     # Prints end of log
     logger.info(f"Stopping after: {round(ti.time()-startTime, 3)} s")

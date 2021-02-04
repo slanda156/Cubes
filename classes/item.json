@@ -3,21 +3,19 @@
         "name" : "medKit",
         "displayName" : "Med Kit",
         "category" : "healing",
-        "uses" : 1,
-        "cost" : 20,
+        "uses" : 5,
         "args" :{
             "healing" : 20
         }
     },
 
-    "test" : {
-        "name" : "test",
-        "displayName" : "TEST",
-        "category" : "test",
-        "uses" : 0,
-        "cost" : 20,
+    "bandage" : {
+        "name" : "bandage",
+        "displayName" : "Bandage",
+        "category" : "healing",
+        "uses" : 1,
         "args" :{
-            "damage" : 20
+            "healing" : 10
         }
     }
 }

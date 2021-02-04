@@ -40,7 +40,7 @@ class character:
         self.towerWeapon = weapons[findObjectInList(weapons, "rifle")]
         self.accuracy = 1
 
-        self.inventory = {}
+        self.inventory = []
         self.equipItem = None
 
         if self.armor.type == physical:
@@ -144,11 +144,6 @@ class character:
         py.draw.line(self.gamesurf, self.weapon.color, self.newPos, (self.newPos + lookDir), int(self.radius/4))
 
         py.draw.circle(self.gamesurf, self.armor.color, self.newPos, int(self.radius/3))
-
-        if target is not None:
-            pos = target - offset
-            newpos = (int(pos[0]), int(pos[1]))
-            py.draw.circle(self.gamesurf, ERROCOLOR, newpos, 20)
 
         self.cooldown -= self.time
 
@@ -290,4 +285,59 @@ class character:
         self.towers.append(tower((self.pos[0], self.pos[1]-40), self.team, self.towerWeapon, self.level, self.towerAccuracy))
 
     def addItem(self, item):
-        self.inventory[item.displayName] = item
+        try:
+            index = self.inventory.index(item)
+            number = self.inventory[index].number
+            item.number = number + 1
+        except:
+            pass
+        finally:
+            self.inventory.append(item)
+            if len(self.inventory) == 1:
+                self.equipItem = self.inventory[0]
+
+    def useItem(self, pos=0):
+        if pos == 0:
+            index = self.inventory.index(self.equipItem)
+
+            if self.equipItem.category == "healing":
+                self.health += self.equipItem.healing
+                if self.health > self.maxHealth:
+                    self.health = self.maxHealth
+
+            self.equipItem.uses -= 1
+            if self.equipItem.uses <= 0:
+                del self.inventory[index]
+                if len(self.inventory) > 0:
+                    self.equipItem = self.inventory[0]
+                else:
+                    self.equipItem = None
+            else:
+                self.inventory[index] = self.equipItem
+
+        elif pos > 0:
+            index = pos - 1
+
+            if self.inventory[index].category == "healing":
+                self.health += self.inventory[index].healing
+                if self.health > self.maxHealth:
+                    self.health = self.maxHealth
+
+            self.inventory[index].uses -= 1
+            if self.inventory[index].uses <= 0:
+                del self.inventory[index]
+
+    def changeItem(self, scroll):
+        if len(self.inventory) > 1:
+            index = self.inventory.index(self.equipItem) + scroll
+            if index > len(self.inventory)-1:
+                index = index - (len(self.inventory)-1)
+            elif index < 0:
+                index = len(self.inventory) + index
+            self.equipItem = self.inventory[index]
+
+        elif len(self.inventory) > 0:
+            self.equipItem = self.inventory[0]
+
+        else:
+            self.equipItem = None
