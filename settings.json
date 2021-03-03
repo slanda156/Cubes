@@ -1,1 +1,13 @@
-{"display": {"resolutionX": 1920, "resolutionY": 1080}}
+{
+  "display": {
+    "resolutionX": 1920,
+    "resolutionY": 1080
+  },
+  "indexServer": {
+    "ip": "192.168.178.50",
+    "port": 5501,
+    "timeout": 1000
+  },
+  "favoriteServers": {},
+  "loggingLevel": "debug"
+}

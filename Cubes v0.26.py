@@ -1,10 +1,3 @@
-# Import modules
-import json
-import time as ti
-import traceback
-import random as ra
-import pygame as py
-
 # Import classes
 from classes.weapons import *
 from classes.armor import *
@@ -19,6 +12,7 @@ from classes.nest import nest
 from classes.textWidget import textWidget
 from classes.settingWidget import settingField
 from classes.button import button
+from classes.network import indexServer, gameServer
 
 # Import constants
 from classes.constants import *
@@ -118,11 +112,27 @@ def initSettings():
     global settings
     global WINDOWWIDTH
     global WINDOWHEIGHT
+    global indexServer
     # Open settings
     with open("settings.json", "r+") as f:
         # Load settings
         settings = json.load(f)
         display = settings.get("display")
+        server = settings.get("indexServer")
+        loggingLevel = settings.get("loggingLevel")
+        # Check for difrent logging levels & sets logger
+        if loggingLevel == "debug":
+            logger.setLevel(logging.DEBUG)
+        elif loggingLevel == "info":
+            logger.setLevel(logging.INFO)
+        elif loggingLevel == "warning":
+            logger.setLevel(logging.WARNING)
+        elif loggingLevel == "critical":
+            logger.setLevel(logging.CRITICAL)
+
+    # Create index server & connect to it
+    mainServer = indexServer(server["ip"], server["port"], server["timeout"])
+    mainServer.connect()
 
     # Define screen resolution
     WINDOWWIDTH = display.get("resolutionX")
@@ -608,6 +618,6 @@ finally:
     # Save settings to json
     logger.info("Saving settings")
     with open("settings.json", "w+") as f:
-        json.dump(settings, f)
+        json.dump(settings, f, indent=2)
     # Prints end of log
     logger.info(f"Stopping after: {round(ti.time()-startTime, 3)} s")

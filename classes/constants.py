@@ -1,7 +1,9 @@
 # Import modules
 import json
+import traceback as traceback
 import glob
 import time as ti
+import random as ra
 import logging
 import pygame as py
 
@@ -22,7 +24,7 @@ logger = logging.getLogger(__name__)
 with open("classes\\damageTypes.json") as f:
     damageTypes = json.load(f)
 
-version = "0.25"
+version = "0.26"
 
 # Defined resolutions
 RESOLUTIONS = [
@@ -34,6 +36,10 @@ RESOLUTIONS = [
     [960, 640],
     [800, 600]
 ]
+
+# Define server
+gameServers = []
+mainServer = None
 
 # Sets screen mode
 screen = "main_menu"
