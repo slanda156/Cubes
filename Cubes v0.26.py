@@ -620,4 +620,4 @@ finally:
     with open("settings.json", "w+") as f:
         json.dump(settings, f, indent=2)
     # Prints end of log
-    logger.info(f"Stopping after: {round(ti.time()-startTime, 3)} s")
+    logger.info(f"Stopping after: {round(ti.time()-startTime, 3)}s")
