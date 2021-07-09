@@ -92,12 +92,15 @@ def positiveNum(number):
     return number
 
 def canSeeTarget(char, target):
-    # Check for visibility
-    if not target.visible > char.awareness:
+    # Check distance
+    if calcDist(char.pos, target.pos) >= 1500:
         return False
 
-    # Check distance
-    if calcDist(char.pos, target.pos) > 1500:
+    # Calc current visibility of target to char
+    visibility = 1-(1500/calcDist(char.pos, target.pos)) * target.visibility 
+
+    # Check for visibility
+    if not visibility > 1-char.awareness:
         return False
 
     return True

@@ -21,9 +21,8 @@ class nest:
     def resize(self):
         if len(self.hearts)-1 < self.maxHearts:
             i = ra.randrange(1, 1001)
-            i = i / 10
             # Check if it should spawn
-            if i <= self.spawnChanceHeart:
+            if i/10 <= self.spawnChanceHeart:
                 # Generate position
                 x = ra.randint(-20*self.maxHearts, 20*self.maxHearts)
                 y = ra.randint(-20*self.maxHearts, 20*self.maxHearts)
@@ -37,7 +36,7 @@ class nest:
         if len(self.spawns)-1 < self.maxSpawns:
             i = ra.randrange(1, 1001)
             # Check if it should spawn
-            if i <= self.spawnChanceSpawns:
+            if i/10 <= self.spawnChanceSpawns:
                 # Generate position
                 x = ra.randint(-15*self.maxSpawns, 15*self.maxSpawns)
                 y = ra.randint(-15*self.maxSpawns, 15*self.maxSpawns)
@@ -59,7 +58,7 @@ class nest:
                     # Add it to the lsist
                     self.spawns.append(spawns)
 
-    def draw(self, offset, waveCooldown, time):
+    def draw(self, offset, waveCooldown, gamesurf, time, difficulty, characters):
         newPos = self.pos - offset
         newPos = (int(newPos[0]), int(newPos[1]))
 
@@ -68,6 +67,6 @@ class nest:
             #x.draw(offset)
         # Draw all spawns
         for x in self.spawns:
-            x.draw(offset)
+            x.draw(offset, time)
             if waveCooldown <= 0:
-                x.spawn(time)
+                x.spawn(gamesurf, time, difficulty, characters)

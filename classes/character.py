@@ -21,6 +21,7 @@ class character:
         self.armor = usedArmor
         self.team = team
         self.visibility = 1
+        self.awareness = 1
         self.cooldown = 0.1
         self.maxCooldown = self.weapon.reloadTime / 100
         self.target = self.origine
@@ -64,7 +65,7 @@ class character:
         else:
             self.movementSpeed = int(speed)
 
-    def draw(self, offset, time, lights):
+    def draw(self, offset, time, lights, playerCharacter):
         self.time = time
         # Get current brightness
         lamps = getLights(self.pos, lights)
@@ -104,7 +105,15 @@ class character:
             else:
                 self.health -= x.damage*self.time
 
+            # Change awarness
+            if x.type == electric:
+                self.awareness = 0
+
             if x.duration <= 0:
+                # Restore awareness
+                if x.type == electric:
+                    self.awareness = 1
+
                 try:
                     del self.effect[self.effect.index(x)]
                 except:
@@ -114,8 +123,7 @@ class character:
             self.target = py.mouse.get_pos() + offset
 
         else:
-            characters = [self]
-            target = characters[findPlayerChar(characters)] #TODO
+            target = playerCharacter
 
             if canSeeTarget(self, target):
                 self.target = target
@@ -222,7 +230,7 @@ class character:
                 self.effect[effectPos].effectDamage = hitWeapon.effectDamage
 
             else:
-                self.effect.append(effect(hitWeapon.typ, hitWeapon.effectDuration, hitWeapon.damage/10, hitWeapon.color))
+                self.effect.append(effect(hitWeapon.type, hitWeapon.effectDuration, hitWeapon.damage/10, hitWeapon.color))
 
         if self.armor.type == hitWeapon.type:
             self.health -= hitWeapon.damage/2

@@ -31,6 +31,7 @@ setFPS = 60
 cordOffset = py.Vector2(0, 0)
 WINDOWHEIGHT= 0
 WINDOWWIDTH = 0
+fullscreen = False
 
 logger.info(f"Starting, version: {version}")
 
@@ -56,6 +57,7 @@ maxChar = 0
 time = 0
 weaponIndex = 0
 armorIndex = 0
+difficulty = 0
 
 # Define reset
 def reset():
@@ -118,6 +120,8 @@ def initSettings():
     global settings
     global WINDOWWIDTH
     global WINDOWHEIGHT
+    global fullscreen
+    
     # Open settings
     with open("settings.json", "r+") as f:
         # Load settings
@@ -127,6 +131,7 @@ def initSettings():
     # Define screen resolution
     WINDOWWIDTH = display.get("resolutionX")
     WINDOWHEIGHT = display.get("resolutionY")
+    fullscreen = display.get("fullscreen")
 
 # Initialsation
 
@@ -138,7 +143,16 @@ if not py.get_init():
 initSettings()
 
 # Sets the display
-gamesurf = py.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT))
+# Check if in fullscreen mode
+if fullscreen:
+    window = py.display.Info()
+    WINDOWWIDTH = window.current_w
+    WINDOWHEIGHT = window.current_h
+    gamesurf = py.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT), py.FULLSCREEN)
+    
+else:
+    gamesurf = py.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT))
+
 py.display.set_caption(f"Cubes v.{version}")
 
 # Define setting windows
@@ -150,7 +164,53 @@ setting4 = settingField((1100, 200), (200, 500), gamesurf)
 # Creates the main clock
 clock = py.time.Clock()
 
-# Main Loop
+# Create buttons
+# Define widgets size & position
+resetButtonSize = (150, 40)
+resetButtonPos = ((WINDOWWIDTH//2)-(resetButtonSize[0]//2), (WINDOWHEIGHT//2)-resetButtonSize[1]//2)
+
+menuButtonSize = (150, 40)
+menuButtonPos = ((WINDOWWIDTH//2)-(menuButtonSize[0]//2), (WINDOWHEIGHT//2)-menuButtonSize[1]//2+50)
+
+upPos1 = ((WINDOWWIDTH/2)-100, (WINDOWHEIGHT/4)+130)
+downPos1 = ((WINDOWWIDTH/2)-100, (WINDOWHEIGHT/4)+80)
+upPos2 = ((WINDOWWIDTH/2)-100, (WINDOWHEIGHT/4)+50)
+downPos2 = ((WINDOWWIDTH/2)-100, (WINDOWHEIGHT/4))
+
+# Define widgets
+armorText = textWidget(buttonFont, armors[0].color, ((WINDOWWIDTH/2)-70, (WINDOWHEIGHT/4)+15), gamesurf)
+weaponText = textWidget(buttonFont, weapons[0].color, ((WINDOWWIDTH/2)-70, (WINDOWHEIGHT/4)+90), gamesurf)
+quitText = textWidget(buttonFont, BLACK, ((WINDOWWIDTH/2)-35, (WINDOWHEIGHT/3)+150), gamesurf)
+optionsText = textWidget(buttonFont, BLACK, ((WINDOWWIDTH/2)-55, (WINDOWHEIGHT/3)+100), gamesurf)
+titletext = textWidget(title2Font, (220, 220, 220), (WINDOWWIDTH/2-90, 150), gamesurf)
+deadText = textWidget(titleFont, RED, (WINDOWWIDTH/2-100, WINDOWHEIGHT*0.2), gamesurf)
+playText = textWidget(buttonFont, BLACK, ((WINDOWWIDTH/2)-30, (WINDOWHEIGHT/3)+50), gamesurf)
+menuText = textWidget(buttonFont, BLACK, (menuButtonPos[0]+(menuButtonSize[0]*0.1), menuButtonPos[1]), gamesurf)
+resetText = textWidget(buttonFont, BLACK, (resetButtonPos[0]+(resetButtonSize[0]*0.22), resetButtonPos[1]), gamesurf)
+pauseText = textWidget(titleFont, WHITE, (WINDOWWIDTH/2-100, WINDOWHEIGHT*0.2), gamesurf)
+fpsText = textWidget(buttonFont, GREEN, ((WINDOWWIDTH/2), 20), gamesurf)
+xpText = textWidget(buttonFont, GREEN, (20, 80), gamesurf)
+levelText = textWidget(buttonFont, GREEN, (20, 50), gamesurf)
+healthText = textWidget(buttonFont, LIGHTRED, (20, 20), gamesurf)
+resourcesText = textWidget(buttonFont, GREEN, ((WINDOWWIDTH-200), 20), gamesurf)
+waveCooldownText = textWidget(titleFont, GREEN, (WINDOWWIDTH/2, 20), gamesurf)
+
+effectIconText = iconAndText(None, 5, effectFont, ERROCOLOR, "None", (40, WINDOWHEIGHT-80), gamesurf)
+equippedItemIconText = iconAndText(None, 2, itemFont, GREEN, "None", (WINDOWWIDTH-180, 80), gamesurf)
+
+upWeaponButtonRect = py.Rect(upPos1[0], upPos1[1], 20, 20)
+downWeaponButtonRect = py.Rect(downPos1[0], downPos1[1], 20, 20)
+upArmorButtonRect = py.Rect(upPos2[0], upPos2[1], 20, 20)
+downArmorButtonRect = py.Rect(downPos2[0], downPos2[1], 20, 20)
+quitButton = py.Rect((WINDOWWIDTH/2)-40, (WINDOWHEIGHT/3)+150, 80, 40)
+playRect = py.Rect((WINDOWWIDTH/2)-90, (WINDOWHEIGHT/3)+50, 180, 40)
+optionsRect = py.Rect((WINDOWWIDTH/2)-90, (WINDOWHEIGHT/3)+100, 180, 40)
+
+menuButton = py.Rect(menuButtonPos[0], menuButtonPos[1], menuButtonSize[0], menuButtonSize[1])
+resetButton = py.Rect(resetButtonPos[0], resetButtonPos[1], resetButtonSize[0], resetButtonSize[1])
+
+backButton = py.Rect(WINDOWWIDTH/2-55, WINDOWHEIGHT/3*2, 180, 40)
+applyButton = py.Rect(WINDOWWIDTH/2-55, WINDOWHEIGHT/3*2-50, 180, 40)
 
 # Resets all variables
 reset()
@@ -175,52 +235,8 @@ try:
         else:
             maxChar = 10
 
-        # Define widgets size & position
-        resetButtonSize = (150, 40)
-        resetButtonPos = ((WINDOWWIDTH//2)-(resetButtonSize[0]//2), (WINDOWHEIGHT//2)-resetButtonSize[1]//2)
-
-        menuButtonSize = (150, 40)
-        menuButtonPos = ((WINDOWWIDTH//2)-(menuButtonSize[0]//2), (WINDOWHEIGHT//2)-menuButtonSize[1]//2+50)
-
-        upPos1 = ((WINDOWWIDTH/2)-100, (WINDOWHEIGHT/4)+130)
-        downPos1 = ((WINDOWWIDTH/2)-100, (WINDOWHEIGHT/4)+80)
-        upPos2 = ((WINDOWWIDTH/2)-100, (WINDOWHEIGHT/4)+50)
-        downPos2 = ((WINDOWWIDTH/2)-100, (WINDOWHEIGHT/4))
-
-        # Define widgets
-        armorText = textWidget(buttonFont, armors[0].color, ((WINDOWWIDTH/2)-70, (WINDOWHEIGHT/4)+15), gamesurf)
-        weaponText = textWidget(buttonFont, weapons[0].color, ((WINDOWWIDTH/2)-70, (WINDOWHEIGHT/4)+90), gamesurf)
-        quitText = textWidget(buttonFont, BLACK, ((WINDOWWIDTH/2)-35, (WINDOWHEIGHT/3)+150), gamesurf)
-        optionsText = textWidget(buttonFont, BLACK, ((WINDOWWIDTH/2)-55, (WINDOWHEIGHT/3)+100), gamesurf)
-        titletext = textWidget(title2Font, (220, 220, 220), (WINDOWWIDTH/2-90, 150), gamesurf)
-        deadText = textWidget(titleFont, RED, (WINDOWWIDTH/2-100, WINDOWHEIGHT*0.2), gamesurf)
-        playText = textWidget(buttonFont, BLACK, ((WINDOWWIDTH/2)-30, (WINDOWHEIGHT/3)+50), gamesurf)
-        menuText = textWidget(buttonFont, BLACK, (menuButtonPos[0]+(menuButtonSize[0]*0.1), menuButtonPos[1]), gamesurf)
-        resetText = textWidget(buttonFont, BLACK, (resetButtonPos[0]+(resetButtonSize[0]*0.22), resetButtonPos[1]), gamesurf)
-        pauseText = textWidget(titleFont, WHITE, (WINDOWWIDTH/2-100, WINDOWHEIGHT*0.2), gamesurf)
-        fpsText = textWidget(buttonFont, GREEN, ((WINDOWWIDTH/2), 20), gamesurf)
-        xpText = textWidget(buttonFont, GREEN, (20, 80), gamesurf)
-        levelText = textWidget(buttonFont, GREEN, (20, 50), gamesurf)
-        healthText = textWidget(buttonFont, LIGHTRED, (20, 20), gamesurf)
-        resourcesText = textWidget(buttonFont, GREEN, ((WINDOWWIDTH-200), 20), gamesurf)
-        waveCooldownText = textWidget(titleFont, GREEN, (WINDOWWIDTH/2, 20), gamesurf)
-
-        effectIconText = iconAndText(None, 5, effectFont, ERROCOLOR, "None", (40, WINDOWHEIGHT-80), gamesurf)
-        equippedItemIconText = iconAndText(None, 2, itemFont, GREEN, "None", (WINDOWWIDTH-180, 80), gamesurf)
-
-        upWeaponButtonRect = py.Rect(upPos1[0], upPos1[1], 20, 20)
-        downWeaponButtonRect = py.Rect(downPos1[0], downPos1[1], 20, 20)
-        upArmorButtonRect = py.Rect(upPos2[0], upPos2[1], 20, 20)
-        downArmorButtonRect = py.Rect(downPos2[0], downPos2[1], 20, 20)
-        quitButton = py.Rect((WINDOWWIDTH/2)-40, (WINDOWHEIGHT/3)+150, 80, 40)
-        playRect = py.Rect((WINDOWWIDTH/2)-90, (WINDOWHEIGHT/3)+50, 180, 40)
-        optionsRect = py.Rect((WINDOWWIDTH/2)-90, (WINDOWHEIGHT/3)+100, 180, 40)
-
-        menuButton = py.Rect(menuButtonPos[0], menuButtonPos[1], menuButtonSize[0], menuButtonSize[1])
-        resetButton = py.Rect(resetButtonPos[0], resetButtonPos[1], resetButtonSize[0], resetButtonSize[1])
-
-        backButton = py.Rect(WINDOWWIDTH/2-55, WINDOWHEIGHT/3*2, 180, 40)
-        applyButton = py.Rect(WINDOWWIDTH/2-55, WINDOWHEIGHT/3*2-50, 180, 40)
+        # Calculate current difficulty
+        difficulty = characters[char].level
 
         # Main event loop
         for event in py.event.get():
@@ -505,14 +521,14 @@ try:
                 x.draw(cordOffset)
 
             for x in nests:
-                x.draw(cordOffset, waveCooldown, time)
+                x.draw(cordOffset, waveCooldown, gamesurf, time, difficulty, characters)
                 x.resize()
 
             for x in barriers:
                 x.draw(cordOffset)
 
             for x in characters:
-                x.draw(cordOffset, time, lights)
+                x.draw(cordOffset, time, lights, characters[char])
                 for w in x.towers:
                     w.draw(cordOffset)
                     checkHits(w.shots, characters, characters)

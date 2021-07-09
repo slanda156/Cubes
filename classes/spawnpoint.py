@@ -4,7 +4,8 @@ import pygame as py
 from classes.constants import *
 from classes.weapons import *
 from classes.functions import findPlayerChar
-from classes.armor import armorNum
+from classes.armor import armorNum, armors
+from classes.character import character
 
 class spawnPoint:
     def __init__(self, pos, team, gamesurf):
@@ -26,7 +27,7 @@ class spawnPoint:
         py.draw.rect(self.gamesurf, GREY, (newPos[0]-30, newPos[1]-30, 60, 60))
         py.draw.rect(self.gamesurf, GREEN, (newPos[0]-25, newPos[1]-25, 50, 50))
 
-    def spawn(self, time, characters):
+    def spawn(self, gamesurf, time, difficulty, characters):
         maxUnits = enemyPower // 5
 
         if maxUnits <= 0:
@@ -39,13 +40,13 @@ class spawnPoint:
                 if self.level // 1 >= 1:
                     allowedWeaponTypes.append(physical)
 
-                if characters[findPlayerChar(characters)].level // 3 >= 1:
+                if difficulty // 3 >= 1:
                     allowedWeaponTypes.append(fire)
 
-                if characters[findPlayerChar(characters)].level // 6 >= 1:
+                if difficulty // 6 >= 1:
                     allowedWeaponTypes.append(plasma)
 
-                if characters[findPlayerChar(characters)].level // 9 >= 1:
+                if difficulty // 9 >= 1:
                     allowedWeaponTypes.append(laser)
 
                 for a in allowedWeaponTypes:
@@ -63,7 +64,7 @@ class spawnPoint:
                 logger.debug("Spawning character")
 
                 # Spawning character
-                #characters.append(character(self.pos, self, self.team, allowedWeapons[weaponIn], armors[armorIn], baseSpeed))
+                characters.append(character(self.pos, self, self.team, allowedWeapons[weaponIn], armors[armorIn], baseSpeed, 0, gamesurf))
 
                 self.cooldown = ra.randint(self.minCooldown, self.maxCooldown)
             else:

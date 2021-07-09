@@ -2,6 +2,7 @@
 
 <h2>Installation</h2>
 <ol>
+<li>Download and install Python 3.x</li>
 <li>Download latest release</li>
 <li>Open <code>Cubes.exe</code></li>
 </ol>
@@ -14,7 +15,6 @@ Features will probably not work correctly and bugs will appear
 
 <h2>Changelog</h2>
 <ul>
-<li>New light system</li>
 <li>New vison system</li>
 <li>Bigger map</li>
 <li>Randomly spawned nests</li>
