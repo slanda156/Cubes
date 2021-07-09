@@ -257,24 +257,24 @@ class character:
 
             while i <= 5:
                 newDierection = dierection + offsetTrajectory(dierection, 100 * self.accuracy)
-                self.shots.append(projectile(self.pos, newDierection, self.weapon.power, self.weapon, self.team, self.gamesurf))
+                self.shots.append(projectile(self.pos[:], newDierection, self.weapon.power, self.weapon, self.team, self.gamesurf))
                 i += 1
 
         elif self.weapon.type == electric:
             dierection += offsetTrajectory(dierection, 20 * self.accuracy)
-            self.shots.append(projectile(self.pos, dierection, self.weapon.power, self.weapon, self.team, self.gamesurf))
+            self.shots.append(projectile(self.pos[:], dierection, self.weapon.power, self.weapon, self.team, self.gamesurf))
 
         elif self.weapon.type == physical:
             dierection += offsetTrajectory(dierection, 5 * self.accuracy)
-            self.shots.append(projectile(self.pos, dierection, self.weapon.power, self.weapon, self.team, self.gamesurf))
+            self.shots.append(projectile(self.pos[:], dierection, self.weapon.power, self.weapon, self.team, self.gamesurf))
 
         elif self.weapon.type == laser:
             dierection += offsetTrajectory(dierection, 2 * self.accuracy)
-            self.shots.append(projectile(self.pos, dierection, self.weapon.power, self.weapon, self.team, self.gamesurf))
+            self.shots.append(projectile(self.pos[:], dierection, self.weapon.power, self.weapon, self.team, self.gamesurf))
 
         elif self.weapon.type == plasma:
             dierection += offsetTrajectory(dierection, 20 * self.accuracy)
-            self.shots.append(projectile(self.pos, dierection, self.weapon.power, self.weapon, self.team, self.gamesurf))
+            self.shots.append(projectile(self.pos[:], dierection, self.weapon.power, self.weapon, self.team, self.gamesurf))
 
         self.cooldown = self.maxCooldown
 
