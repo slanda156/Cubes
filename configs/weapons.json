@@ -1,0 +1,80 @@
+{
+    "sniper": {
+        "name": "sniper",
+        "displayName": "Sniper",
+        "damage": 10,
+        "range": 1000,
+        "speed": 350,
+        "firingSpeed": 330,
+        "power": 3,
+        "color": [100, 100, 100],
+        "type": "physical",
+        "effects": [],
+        "effectModifier": []
+    },
+    "rifle": {
+        "name": "rifle",
+        "displayName": "Rifle",
+        "damage": 2,
+        "range": 650,
+        "speed": 200,
+        "firingSpeed": 40,
+        "power": 2,
+        "color": [100, 100, 100],
+        "type": "physical",
+        "effects": [],
+        "effectModifier": []
+    },
+    "flamethrower": {
+        "name": "flamethrower",
+        "displayName": "Flamethrower",
+        "damage": 0.5,
+        "range": 300,
+        "speed": 20,
+        "firingSpeed": 10,
+        "power": 6,
+        "color": [252, 93, 25],
+        "type": "fire",
+        "effects": ["burning"],
+        "effectModifier": [0.5]
+    },
+    "plasmaCanone": {
+        "name": "plasmaCanone",
+        "displayName": "Plasma Canone",
+        "damage": 10,
+        "range": 500,
+        "speed": 200,
+        "firingSpeed": 300,
+        "power": 20,
+        "color": [64, 56, 201],
+        "type": "plasma",
+        "effects": ["shocked"],
+        "effectModifier": [1]
+    },
+    "plasmaRifle": {
+        "name": "plasmaRifle",
+        "displayName": "Plasma Rifle",
+        "damage": 2,
+        "range": 500,
+        "speed": 300,
+        "firingSpeed": 20,
+        "power": 10,
+        "color": [64, 56, 201],
+        "type": "plasma",
+        "effects": ["shocked"],
+        "effectModifier": [1]
+    },
+    "laserRifle": {
+        "name": "laserRifle",
+        "displayName": "Laser Rifle",
+        "damage": 4,
+        "range": 600,
+        "speed": 400,
+        "firingSpeed": 80,
+        "power": 5,
+        "color": [255, 87, 196],
+        "type": "laser",
+        "effects": ["burning"],
+        "effectModifier": [1]
+    }
+}

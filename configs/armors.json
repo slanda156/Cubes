@@ -1,0 +1,20 @@
+{
+    "physical": {
+        "name": "physicalArmor",
+        "displayName": "Physical Armor",
+        "type": "physical",
+        "color": [100, 100, 100]
+    },
+    "fire": {
+        "name": "fireArmor",
+        "displayName": "Fire Armor",
+        "type": "fire",
+        "color": [252, 93, 25]
+    },
+    "electro": {
+        "name": "electricArmor",
+        "displayName": "Electric Armor",
+        "type": "electric",
+        "color": [64, 56, 201]
+    }
+}

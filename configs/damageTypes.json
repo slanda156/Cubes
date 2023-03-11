@@ -1,0 +1,7 @@
+{
+    "physical"  : 0,
+    "fire"      : 1,
+    "plasma"    : 2,
+    "electric"  : 3,
+    "laser"     : 4
+}

@@ -2,7 +2,7 @@
     "medkit" : {
         "name" : "medKit",
         "displayName" : "Med Kit",
-        "category" : "healing",
+        "type" : "healing",
         "uses" : 5,
         "args" :{
             "healing" : 20
@@ -12,7 +12,7 @@
     "bandage" : {
         "name" : "bandage",
         "displayName" : "Bandage",
-        "category" : "healing",
+        "type" : "healing",
         "uses" : 1,
         "args" :{
             "healing" : 10
