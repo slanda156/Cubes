@@ -119,8 +119,6 @@ if settings.fullscreen:
 else:
     gamesurf = py.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT))
 
-screen = "main_menu"
-
 baseSpeed = 150 # pixel/s
 towerBaseCost = 10
 enemyPower = 1
