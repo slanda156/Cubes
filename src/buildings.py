@@ -256,3 +256,41 @@ class tower: #TODO Refactor towers
 
 class barrier: #TODO Create barriers
     ...
+
+
+def generatePointsAroundDot(pos, minVar, maxVar):
+    points = []
+    power = ra.randrange(minVar, maxVar)
+
+    while len(points) < power:
+        distance = []
+        minVal = 0
+
+        a = ra.randrange(-10, 10)
+        b = ra.randrange(-10, 10)
+        c = ra.randrange(40, 400)
+        offset = py.Vector2(a, b)
+
+        if offset.length() != 0:
+            offset.scale_to_length(c)
+
+        if len(points) > 1:
+            for x in points:
+                if calcDist(x, pos+offset) > 100:
+                    distance.append((calcDist(x, pos+offset)))
+
+            for x in distance:
+                if minVal != 0:
+                    if minVal < x:
+                        minVal = x
+
+                else:
+                    minVal = x
+
+            if minVal > 50:
+                points.append(pos+offset)
+
+        else:
+            points.append(pos+offset)
+
+    return points

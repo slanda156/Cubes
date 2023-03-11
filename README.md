@@ -2,7 +2,6 @@
 
 <h2>Installation</h2>
 <ol>
-<li>Download and install Python 3.x</li>
 <li>Download latest release</li>
 <li>Open <code>Cubes.exe</code></li>
 </ol>
@@ -15,11 +14,8 @@ Features will probably not work correctly and bugs will appear
 
 <h2>Changelog</h2>
 <ul>
-<li>New vison system</li>
-<li>Bigger map</li>
+<li>Fnfinite map</li>
 <li>Randomly spawned nests</li>
-<li>Nests have hearts with special abilitys</li>
-<li>Extra weapons for enemies</li>
 </ul>
 
 <h2>Controls</h2>
@@ -39,10 +35,6 @@ Features will probably not work correctly and bugs will appear
     <tr>
         <td>E:</td>
         <td>Use equiped item</td>
-    </tr>
-    <tr>
-        <td>TAB:</td>
-        <td>WIP</td>
     </tr>
     <tr>
         <td>LMB:</td>
@@ -67,8 +59,6 @@ Features will probably not work correctly and bugs will appear
         <td>Range</td>
         <td>Firing Interval</td>
         <td>DPS</td>
-        <td>Magazin</td>
-        <td>Reload Time</td>
         <td>Weapon Type</td>
         <td>Effect</td>
         <td>Effect Duration</td>
@@ -79,8 +69,6 @@ Features will probably not work correctly and bugs will appear
         <td>1000</td>
         <td>3.3s</td>
         <td>3</td>
-        <td>5</td>
-        <td></td>
         <td>Physical</td>
         <td>None</td>
         <td></td>
@@ -91,8 +79,6 @@ Features will probably not work correctly and bugs will appear
         <td>650</td>
         <td>0.4s</td>
         <td>5</td>
-        <td>30</td>
-        <td></td>
         <td>Physical</td>
         <td>None</td>
         <td></td>
@@ -103,8 +89,6 @@ Features will probably not work correctly and bugs will appear
         <td>300</td>
         <td>0.1s</td>
         <td>5</td>
-        <td>100</td>
-        <td></td>
         <td>Fire</td>
         <td>Burning</td>
         <td>10s</td>
@@ -115,8 +99,6 @@ Features will probably not work correctly and bugs will appear
         <td>500</td>
         <td>3s</td>
         <td>3.3</td>
-        <td>8</td>
-        <td></td>
         <td>Plasma</td>
         <td>Shocked</td>
         <td>3s</td>
@@ -127,8 +109,6 @@ Features will probably not work correctly and bugs will appear
         <td>500</td>
         <td>0.2s</td>
         <td>10</td>
-        <td>25</td>
-        <td></td>
         <td>Plasma</td>
         <td>Shocked</td>
         <td>2s</td>
@@ -139,8 +119,6 @@ Features will probably not work correctly and bugs will appear
         <td>600</td>
         <td>0.8s</td>
         <td>3.2</td>
-        <td>20</td>
-        <td></td>
         <td>Laser</td>
         <td>Burning</td>
         <td>2s</td>
@@ -177,6 +155,3 @@ Features will probably not work correctly and bugs will appear
         <td>Restores 20% of max health</td>
     </tr>
 </table>
-
-<h2>Upgrades</h2>
-<p>WIP</p>

@@ -6,25 +6,28 @@ import pygame as py
 from src.logger import logger
 from src.config import (
     settings,
-    colors,
+    screen,
     gamesurf,
     WINDOWWIDTH,
     WINDOWHEIGHT,
-    weapons,
-    armors,
-    items,
     characters,
-    baseSpeed
+    baseSpeed,
+    fonts,
+    images
 )
-# from src.gui import icon, iconAndText, button, settingField
-from src.character import player
+from src.definition import COLORS
+from src.gui import iconAndText, textWidget, button
+from src.character import player, checkHits
 from src.buildings import nest
+from src.equipment import weapons, armors, items
 
 def main():
     if not py.get_init():
         py.init()
 
-    screen = "main_menu"
+    global settings
+
+    currentScreen = screen("main_menu")
     running = True
     cordOffset = [0, 0]
 
@@ -32,22 +35,72 @@ def main():
 
     clock = py.time.Clock()
 
+    weaponIndex = 0
+    armorIndex = 0
+    waveCooldown = 0
+    hudMode = 0
+    tempSettings = settings.copy()
+
+    # Create buttons
+    # Define widgets size & position
+    resetButtonSize = (150, 40)
+    resetButtonPos = ((WINDOWWIDTH//2)-(resetButtonSize[0]//2), (WINDOWHEIGHT//2)-resetButtonSize[1]//2)
+
+    menuButtonSize = (150, 40)
+    menuButtonPos = ((WINDOWWIDTH//2)-(menuButtonSize[0]//2), (WINDOWHEIGHT//2)-menuButtonSize[1]//2+50)
+
+    upPos1 = ((WINDOWWIDTH/2)-100, (WINDOWHEIGHT/4)+130)
+    downPos1 = ((WINDOWWIDTH/2)-100, (WINDOWHEIGHT/4)+80)
+    upPos2 = ((WINDOWWIDTH/2)-100, (WINDOWHEIGHT/4)+50)
+    downPos2 = ((WINDOWWIDTH/2)-100, (WINDOWHEIGHT/4))
+
+    # Define widgets COLORS["LIGHTRED"]
+    armorText = textWidget(fonts["buttonFont"], armors[0].color, ((WINDOWWIDTH/2)-70, (WINDOWHEIGHT/4)+15), gamesurf)
+    weaponText = textWidget(fonts["buttonFont"], weapons[0].color, ((WINDOWWIDTH/2)-70, (WINDOWHEIGHT/4)+90), gamesurf)
+    quitText = textWidget(fonts["buttonFont"], COLORS["BLACK"], ((WINDOWWIDTH/2)-35, (WINDOWHEIGHT/3)+150), gamesurf)
+    optionsText = textWidget(fonts["buttonFont"], COLORS["BLACK"], ((WINDOWWIDTH/2)-55, (WINDOWHEIGHT/3)+100), gamesurf)
+    titletext = textWidget(fonts["title2Font"], (220, 220, 220), (WINDOWWIDTH/2-90, 150), gamesurf)
+    deadText = textWidget(fonts["titleFont"], COLORS["RED"], (WINDOWWIDTH/2-100, WINDOWHEIGHT*0.2), gamesurf)
+    playText = textWidget(fonts["buttonFont"], COLORS["BLACK"], ((WINDOWWIDTH/2)-30, (WINDOWHEIGHT/3)+50), gamesurf)
+    menuText = textWidget(fonts["buttonFont"], COLORS["BLACK"], (menuButtonPos[0]+(menuButtonSize[0]*0.1), menuButtonPos[1]), gamesurf)
+    resetText = textWidget(fonts["buttonFont"], COLORS["BLACK"], (resetButtonPos[0]+(resetButtonSize[0]*0.22), resetButtonPos[1]), gamesurf)
+    pauseText = textWidget(fonts["titleFont"], COLORS["WHITE"], (WINDOWWIDTH/2-100, WINDOWHEIGHT*0.2), gamesurf)
+    fpsText = textWidget(fonts["buttonFont"], COLORS["GREEN"], ((WINDOWWIDTH/2), 20), gamesurf)
+    levelText = textWidget(fonts["buttonFont"], COLORS["GREEN"], (20, 50), gamesurf)
+    healthText = textWidget(fonts["buttonFont"], COLORS["LIGHTRED"], (20, 20), gamesurf)
+    resourcesText = textWidget(fonts["buttonFont"], COLORS["GREEN"], ((WINDOWWIDTH-200), 20), gamesurf)
+    waveCooldownText = textWidget(fonts["titleFont"], COLORS["GREEN"], (WINDOWWIDTH/2, 20), gamesurf)
+
+    effectIconText = iconAndText(None, 5, fonts["effectFont"], COLORS["ERRCOLOR"], "None", (40, WINDOWHEIGHT-80), gamesurf)
+    equippedItemIconText = iconAndText(None, 2, fonts["itemFont"], COLORS["GREEN"], "None", (WINDOWWIDTH-180, 80), gamesurf)
+
+    upWeaponButtonRect = py.Rect(upPos1[0], upPos1[1], 20, 20)
+    downWeaponButtonRect = py.Rect(downPos1[0], downPos1[1], 20, 20)
+    upArmorButtonRect = py.Rect(upPos2[0], upPos2[1], 20, 20)
+    downArmorButtonRect = py.Rect(downPos2[0], downPos2[1], 20, 20)
+    quitButton = py.Rect((WINDOWWIDTH/2)-40, (WINDOWHEIGHT/3)+150, 80, 40)
+    playRect = py.Rect((WINDOWWIDTH/2)-90, (WINDOWHEIGHT/3)+50, 180, 40)
+    optionsRect = py.Rect((WINDOWWIDTH/2)-90, (WINDOWHEIGHT/3)+100, 180, 40)
+
+    menuButton = py.Rect(menuButtonPos[0], menuButtonPos[1], menuButtonSize[0], menuButtonSize[1])
+    resetButton = py.Rect(resetButtonPos[0], resetButtonPos[1], resetButtonSize[0], resetButtonSize[1])
+
+    backButton = py.Rect(WINDOWWIDTH/2-55, WINDOWHEIGHT/3*2, 180, 40)
+    applyButton = py.Rect(WINDOWWIDTH/2-55, WINDOWHEIGHT/3*2-50, 180, 40)
+
+    downTriangle = [py.Vector2(0, 0), py.Vector2(20, 0), py.Vector2(10, 10)]
+    upTriangle = [py.Vector2(0, 10), py.Vector2(20, 10), py.Vector2(10, 0)]
+
     reset()
 
     # Main loop
     while running:
-        gamesurf.fill(colors["BLACK"])
+        gamesurf.fill(COLORS["BLACK"])
         time = (clock.get_time() / 1000)
-        playerChar = characters.getPlayer()
-
-        # Defines the maximum amount of enemies
-        if characters[playerChar].level <= 10:
-            maxChar = characters[playerChar].level
-        else:
-            maxChar = 10
+        playerChar = characters.getPlayer() #TODO Rework for MP
 
         # Calculate current difficulty
-        difficulty = characters[playerChar].level
+        difficulty = round(playerChar.kills/(1/playerChar.level), 3)
 
         # Main event loop
         for event in py.event.get():
@@ -55,7 +108,7 @@ def main():
             if event.type == py.QUIT:
                 running = False
 
-            if screen == "main_menu":
+            if currentScreen.get() == "main_menu":
                 # Check for left clicks
                 if event.type == py.MOUSEBUTTONDOWN and event.button == 1:
                     # Get mouse position
@@ -63,12 +116,12 @@ def main():
 
                     # Start
                     if playRect.collidepoint(mousePos):
-                        screen = "game_running"
+                        currentScreen.set("game_running")
                         reset()
 
                     # Go to options
                     if optionsRect.collidepoint(mousePos):
-                        screen = "options"
+                        currentScreen.set("options")
 
                     # Next weapon
                     elif upWeaponButtonRect.collidepoint(mousePos):
@@ -90,7 +143,7 @@ def main():
                     elif quitButton.collidepoint(mousePos):
                         running = False
 
-            elif screen == "options":
+            elif currentScreen.get() == "options":
                 # Check for left clicks
                 if event.type == py.MOUSEBUTTONDOWN and event.button == 1:
                     # Get mouse position
@@ -98,7 +151,7 @@ def main():
 
                     # Back button
                     if backButton.collidepoint(mousePos):
-                        screen = "main_menu"
+                        currentScreen.set("main_menu")
 
                     # Apply settings
                     elif applyButton.collidepoint(mousePos):
@@ -112,7 +165,7 @@ def main():
                     elif backButton.collidepoint(mousePos):
                         pass
 
-            elif screen == "game_running":
+            elif currentScreen.get() == "game_running":
                 if event.type == py.MOUSEBUTTONDOWN:
                     # Cycle through items UP
                     if event.button == 4:
@@ -125,7 +178,7 @@ def main():
                 if event.type == py.KEYDOWN:
                     # Changing pause status
                     if event.key == py.K_ESCAPE:
-                        screen = "game_paused"
+                        currentScreen.set("game_paused")
 
                     # Skip wave cooldwon
                     elif event.key == py.K_t and waveCooldown != 0:
@@ -147,46 +200,37 @@ def main():
                         else:
                             hudMode = 1
 
-                elif event.type == py.MOUSEBUTTONDOWN:
-                    # Teleport to mouse position and sets effect
-                    if event.button == 3 and playerChar.charge >= 100:
-                        playerChar.pos[0] = py.mouse.get_pos()[0] - cordOffset[0]
-                        playerChar.pos[1] = py.mouse.get_pos()[1] - cordOffset[1]
-
-                        playerChar.effect.append(effect("shocked", 1.5, 0, (64, 56, 201)))
-                        playerChar.effectDuration = 2.5
-
-            elif screen == "game_paused" or screen == "death_screen":
+            elif currentScreen.get() == "game_paused" or currentScreen.get() == "death_screen":
 
                 # Check for button clicks
                 if event.type == py.KEYDOWN:
-                    if event.key == py.K_ESCAPE and screen == "game_paused":
-                        screen = "game_running"
+                    if event.key == py.K_ESCAPE and currentScreen.get() == "game_paused":
+                        currentScreen.set("game_running")
 
                 elif event.type == py.MOUSEBUTTONDOWN:
                     if event.button == 1:
                         if resetButton.collidepoint(py.mouse.get_pos()):
                             reset()
-                            screen = "game_running"
+                            currentScreen.set("game_running")
 
                         elif menuButton.collidepoint(py.mouse.get_pos()):
-                            screen = "main_menu"
+                            currentScreen.set("main_menu")
 
-            elif screen == "game_inventory":
+            elif currentScreen.get() == "game_inventory":
                 pass
 
-        if screen == "main_menu":
+        if currentScreen.get() == "main_menu":
 
             # Draw text & icons
             titletext.draw("Cubes")
 
-            py.draw.polygon(gamesurf, BLUE, (downTriangle[0]+upPos1, downTriangle[1]+upPos1, downTriangle[2]+upPos1))
-            py.draw.polygon(gamesurf, BLUE, (upTriangle[0]+downPos1, upTriangle[1]+downPos1, upTriangle[2]+downPos1))
-            py.draw.polygon(gamesurf, BLUE, (downTriangle[0]+upPos2, downTriangle[1]+upPos2, downTriangle[2]+upPos2))
-            py.draw.polygon(gamesurf, BLUE, (upTriangle[0]+downPos2, upTriangle[1]+downPos2, upTriangle[2]+downPos2))
-            py.draw.rect(gamesurf, RED, ((WINDOWWIDTH/2)-40, (WINDOWHEIGHT/3)+150, 80, 40))
-            py.draw.rect(gamesurf, colors["GREY"], ((WINDOWWIDTH/2)-90, (WINDOWHEIGHT/3)+50, 180, 40))
-            py.draw.rect(gamesurf, colors["GREY"], ((WINDOWWIDTH/2)-90, (WINDOWHEIGHT/3)+100, 180, 40))
+            py.draw.polygon(gamesurf, COLORS["BLUE"], (downTriangle[0]+upPos1, downTriangle[1]+upPos1, downTriangle[2]+upPos1))
+            py.draw.polygon(gamesurf, COLORS["BLUE"], (upTriangle[0]+downPos1, upTriangle[1]+downPos1, upTriangle[2]+downPos1))
+            py.draw.polygon(gamesurf, COLORS["BLUE"], (downTriangle[0]+upPos2, downTriangle[1]+upPos2, downTriangle[2]+upPos2))
+            py.draw.polygon(gamesurf, COLORS["BLUE"], (upTriangle[0]+downPos2, upTriangle[1]+downPos2, upTriangle[2]+downPos2))
+            py.draw.rect(gamesurf, COLORS["RED"], ((WINDOWWIDTH/2)-40, (WINDOWHEIGHT/3)+150, 80, 40))
+            py.draw.rect(gamesurf, COLORS["GREY"], ((WINDOWWIDTH/2)-90, (WINDOWHEIGHT/3)+50, 180, 40))
+            py.draw.rect(gamesurf, COLORS["GREY"], ((WINDOWWIDTH/2)-90, (WINDOWHEIGHT/3)+100, 180, 40))
 
             playText.draw("PLAY")
             optionsText.draw("OPTIONS")
@@ -194,15 +238,15 @@ def main():
 
             # Handeling weapon & armor selection
             if weaponIndex < 0:
-                weaponIndex = weaponNum-1
+                weaponIndex = len(weapons)-1
 
-            elif weaponIndex > (weaponNum-1):
+            elif weaponIndex > (len(weapons)-1):
                 weaponIndex = 0
 
             if armorIndex < 0:
-                armorIndex = armorNum-1
+                armorIndex = len(armors)-1
 
-            elif armorIndex > (armorNum-1):
+            elif armorIndex > (len(armors)-1):
                 armorIndex = 0
 
             # Draw weapon & armor selection
@@ -215,35 +259,30 @@ def main():
             playerChar.weapon = weapons[weaponIndex]
             playerChar.armor = armors[armorIndex]
 
-        elif screen == "options":
-            backButton = button((WINDOWWIDTH/2-55, WINDOWHEIGHT/3*2), (180, 40), gamesurf, changeScreen, "main_menu")
-            py.draw.rect(gamesurf, colors["GREY"], (WINDOWWIDTH/2-55, WINDOWHEIGHT/3*2, 180, 40))
-            py.draw.rect(gamesurf, colors["GREY"], (WINDOWWIDTH/2-55, WINDOWHEIGHT/3*2-50, 180, 40))
+        elif currentScreen.get() == "options":
+            backButton = button((WINDOWWIDTH/2-55, WINDOWHEIGHT/3*2), (180, 40), gamesurf, currentScreen.set, "main_menu")
+            py.draw.rect(gamesurf, COLORS["GREY"], (WINDOWWIDTH/2-55, WINDOWHEIGHT/3*2, 180, 40))
+            py.draw.rect(gamesurf, COLORS["GREY"], (WINDOWWIDTH/2-55, WINDOWHEIGHT/3*2-50, 180, 40))
 
-            setting1.draw()
-            setting2.draw()
-            setting3.draw()
-            setting4.draw()
-
-            backText = textWidget(buttonFont, colors["BLACK"], (WINDOWWIDTH/2-55, WINDOWHEIGHT/3*2), gamesurf)
-            applyText = textWidget(buttonFont, colors["BLACK"], (WINDOWWIDTH/2-55, WINDOWHEIGHT/3*2-50), gamesurf)
+            backText = textWidget(fonts["buttonFont"], COLORS["BLACK"], (WINDOWWIDTH/2-55, WINDOWHEIGHT/3*2), gamesurf)
+            applyText = textWidget(fonts["buttonFont"], COLORS["BLACK"], (WINDOWWIDTH/2-55, WINDOWHEIGHT/3*2-50), gamesurf)
 
             backText.draw("Back")
             applyText.draw("Apply")
 
-        elif screen == "game_running":
+        elif currentScreen.get() == "game_running":
             # Getting pressed mouse buttons
             mouse = py.mouse.get_pressed()
 
             # Handel player shooting
-            if mouse[0] == 1 and not checkList(playerChar.effect, "shocked") and playerChar.cooldown <= 0:
+            if mouse[0] == 1 and not playerChar.effects.checkForName("shocked") and playerChar.cooldown <= 0:
                 playerChar.shoot()
 
             # Getting pressed keys
             keys = py.key.get_pressed()
 
             # Handeling player movment
-            if not checkList(playerChar.effect, "shocked"):
+            if not playerChar.effects.checkForName("shocked"):
                 if keys[py.K_w]:
                     if keys[py.K_LSHIFT] and playerChar.boost > 0:
                         playerChar.pos[1] -= playerChar.movementSpeed * 2 * time
@@ -268,7 +307,7 @@ def main():
                         playerChar.boost -= 10
 
                     else:
-                        playerChar.pos[char] += playerChar.movementSpeed * time
+                        playerChar.pos[playerChar] += playerChar.movementSpeed * time
                         playerChar.boost += 10
 
                 if keys[py.K_a]:
@@ -292,7 +331,7 @@ def main():
                     if x.team != 0:
                         try:
                             del characters[characters.index(x)]
-                        except:
+                        except IndexError:
                             logger.warning("Character not deletet")
 
                 # Print remaining time
@@ -303,28 +342,21 @@ def main():
             for x in characters:
                 checkHits(x.shots, characters, characters)
                 for z in x.shots:
-                    for y in barriers:
-                        if checkRectangle(y, z):
-                            try:
-                                del x.shots[x.shots.index(z)]
-                            except:
-                                logger.warning("Projectile not deletet")
                     if z.range <= 0:
                         try:
                             del x.shots[x.shots.index(z)]
-                        except:
+                        except IndexError:
                             logger.warning("Projectile not deletet")
                     z.draw(cordOffset)
 
                 if x.health <= 0:
                     if x.team == 0:
-                        dead = True
-                        reset()
+                        reset() #TODO Add death screen
 
                     else:
                         try:
                             del characters[characters.index(x)]
-                        except:
+                        except IndexError:
                             logger.warning("Character not deletet")
 
             # Draws all objects and handels object specific funktions
@@ -333,21 +365,15 @@ def main():
                 x.resize()
 
             for x in characters:
-                x.draw(cordOffset, time, lights, playerChar)
+                x.draw(cordOffset, time, playerChar)
                 for w in x.towers:
                     w.draw(cordOffset)
                     checkHits(w.shots, characters, characters)
                     for z in w.shots:
-                        for y in barriers:
-                            if checkRectangle(y, z):
-                                try:
-                                    del x.shots[x.shots.index(z)]
-                                except:
-                                    logger.warning("Projectile not deletet")
                         if x.range <= 0:
                             try:
                                 del x.shots[x.shots.index(x)]
-                            except:
+                            except IndexError:
                                 logger.warning("Projectile not deletet")
                         z.draw(cordOffset)
                 if x.controlled:
@@ -362,7 +388,7 @@ def main():
                         cordOffset[1] += (x.newPos[1] - (WINDOWHEIGHT - 500))
 
             # Display the hud
-            for x in towers:
+            for x in buildings:
                 x.healthBar()
 
             for x in characters:
@@ -392,12 +418,12 @@ def main():
             if hudMode == 1:
                 fpsText.draw(f"FPS: {int(clock.get_fps())}")
 
-        elif screen == "game_paused" or screen == "death_screen":
-            py.draw.rect(gamesurf, colors["GREY"], (resetButtonPos[0], resetButtonPos[1], resetButtonSize[0], resetButtonSize[1]))
-            py.draw.rect(gamesurf, colors["GREY"], (menuButtonPos[0], menuButtonPos[1], menuButtonSize[0], menuButtonSize[1]))
+        elif currentScreen.get() == "game_paused" or currentScreen.get() == "death_screen":
+            py.draw.rect(gamesurf, COLORS["GREY"], (resetButtonPos[0], resetButtonPos[1], resetButtonSize[0], resetButtonSize[1]))
+            py.draw.rect(gamesurf, COLORS["GREY"], (menuButtonPos[0], menuButtonPos[1], menuButtonSize[0], menuButtonSize[1]))
 
             # Print current title
-            if screen == "game_paused":
+            if currentScreen.get() == "game_paused":
                 pauseText.draw("Paused")
             else:
                 deadText.draw("You are Dead")
@@ -406,21 +432,26 @@ def main():
 
             menuText.draw("Main Menu")
 
-        elif screen == "game_inventory":
+        elif currentScreen.get() == "game_inventory":
             pass
 
         py.display.update()
 
-        if setFPS <= 0 or setFPS >= 999:
+        if settings.fps <= 0 or settings.fps >= 999:
             clock.tick(120)
-            logger.warning(f"FPS over/under limit ({setFPS})")
+            logger.warning(f"FPS over/under limit ({settings.fps})")
         else:
-            clock.tick(setFPS)
+            clock.tick(settings.fps)
 
 def reset():
     logger.info("Reset")
 
-    gamesurf.fill(colors["BLACK"])
+    global cordOffset
+    global characters
+    global projectiles
+    global buildings
+
+    gamesurf.fill(COLORS["BLACK"])
     py.event.clear()
 
     cordOffset = 0, 0
@@ -433,7 +464,7 @@ def reset():
         oldWeapon = characters.getPlayer().weapon
         oldArmor = characters.getPlayer().armor
 
-    characters.empty()
+    characters.clear()
     projectiles = []
     buildings = []
 
@@ -450,6 +481,11 @@ def reset():
     pos = (ra.randrange(0, WINDOWWIDTH), ra.randrange(0, WINDOWHEIGHT))
     team = 1
     buildings.append(nest(pos, team, gamesurf))
+
+
+cordOffset = [0, 0]
+projectiles = []
+buildings = []
 
 try:
     if __name__ == "__main__":

@@ -1,8 +1,9 @@
 import pygame as py
+from src.definition import COLORS
+from src.logger import logger
 
-from src.config import colors
 
-class iconAndText:
+class iconAndText: #TODO Refactor iconAndText
     def __init__(self, sprit, scale, font, textColor, text, pos, gamesurf):
         self.gamesurf = gamesurf
         self.sprit = sprit
@@ -22,7 +23,8 @@ class iconAndText:
             self.gamesurf.blit(self.sprit, self.pos)
         self.gamesurf.blit(widget, (self.pos[0]+50, self.pos[1]))
 
-class icon:
+
+class icon: #TODO Refactor icon
     def __init__(self, sprit, pos):
         self.sprit = sprit
         self.pos = pos
@@ -30,7 +32,16 @@ class icon:
     def draw(self):
         self.gamesurf.blit(self.sprit, self.pos)
 
-class button:
+
+class textWidget: #TODO Create function textWidget
+    def __init__(self, *test):
+        logger.debug(test)
+
+    def draw(self, text):
+        ...
+
+
+class button: #TODO Refactor button
     def __init__(self, pos, size, gamesurf, function, *args):
         self.pos = pos
         self.size = size
@@ -40,4 +51,4 @@ class button:
 
     def draw(self):
         rectangle = py.Rect(self.pos[0], self.pos[1], self.size[0], self.size[1])
-        py.draw.rect(self.gamesurf, colors["GREY"], rectangle)
+        py.draw.rect(self.gamesurf, COLORS["GREY"], rectangle)

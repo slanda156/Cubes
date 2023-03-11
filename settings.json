@@ -4,5 +4,6 @@
         720
     ],
     "fullscreen": false,
-    "logging": "DEBUG"
+    "logging": "DEBUG",
+    "fps": 60
 }
