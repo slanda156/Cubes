@@ -463,7 +463,7 @@ def getNearestPlayer(start, characters):
             elif minDist[0] > y[0]:
                 minDist = y
 
-        return characters[minDist[1]]
+        return characters[minDist]
 
 
 def getNearestEnemie(start, characters):

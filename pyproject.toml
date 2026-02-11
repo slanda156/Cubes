@@ -1,8 +1,2 @@
 [tool.ruff]
 ignore = ["E501"]
-exclude = [
-    ".github",
-    ".mypy_cache",
-    ".pytest_cache",
-    ".vscode"
-]

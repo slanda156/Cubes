@@ -21,6 +21,7 @@ from src.character import player, checkHits
 from src.buildings import nest
 from src.equipment import weapons, armors, items
 
+
 def main():
     if not py.get_init():
         py.init()
@@ -52,7 +53,7 @@ def main():
     upPos1 = ((WINDOWWIDTH/2)-100, (WINDOWHEIGHT/4)+130)
     downPos1 = ((WINDOWWIDTH/2)-100, (WINDOWHEIGHT/4)+80)
     upPos2 = ((WINDOWWIDTH/2)-100, (WINDOWHEIGHT/4)+50)
-    downPos2 = ((WINDOWWIDTH/2)-100, (WINDOWHEIGHT/4))
+    downPos2 = ((WINDOWWIDTH / 2) - 100, (WINDOWHEIGHT / 4))
 
     # Define widgets COLORS["LIGHTRED"]
     armorText = textWidget(fonts["buttonFont"], armors[0].color, ((WINDOWWIDTH/2)-70, (WINDOWHEIGHT/4)+15), gamesurf)
@@ -97,7 +98,7 @@ def main():
     while running:
         gamesurf.fill(COLORS["BLACK"])
         time = (clock.get_time() / 1000)
-        playerChar = characters.getPlayer() #TODO Rework for MP
+        playerChar = characters.getPlayer() # TODO Rework for MP
 
         # Calculate current difficulty
         difficulty = round(playerChar.kills/(1/playerChar.level), 3)
@@ -351,7 +352,7 @@ def main():
 
                 if x.health <= 0:
                     if x.team == 0:
-                        reset() #TODO Add death screen
+                        reset() # TODO Add death screen
 
                     else:
                         try:
@@ -443,6 +444,7 @@ def main():
         else:
             clock.tick(settings.fps)
 
+
 def reset():
     logger.info("Reset")
 
@@ -491,7 +493,7 @@ try:
     if __name__ == "__main__":
         main()
 
-except:
+except Exception:
     logger.critical(traceback.format_exc())
 
 # Doing final cleanup
